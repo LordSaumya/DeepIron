@@ -13,6 +13,11 @@ A simple machine learning library built in Rust.
 - [ ] Loss Functions
     - [ ] Mean Squared Error
     - [ ] Cross Entropy
+- [ ] Performance evaluation metrics
+    - [ ] Accuracy
+    - [ ] Precision
+    - [ ] Recall
+    - [ ] F-Score
 - [ ] Activation Functions
     - [ ] Sigmoid
     - [ ] ReLU
@@ -27,9 +32,18 @@ A simple machine learning library built in Rust.
     - [ ] Convolutional
         - [ ] Forward Propagation
         - [ ] Backward Propagation
+
+**Future additions**
+- [ ] Dice Loss
+- [ ] Binary Cross-Entropy Loss
+- [ ] Pooling
+    - [ ] Maxpool
+    - [ ] Minpool
+    - [ ] Average Pool
 - [ ] Regularisation
     - [ ] L1
     - [ ] L2
 - [ ] Normalisation
     - [ ] Batch normalisation
     - [ ] Dropout
+- [ ] Hyperparameter Scheduler
