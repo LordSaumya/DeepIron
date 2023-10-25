@@ -23,3 +23,5 @@ A simple machine learning library built in Rust.
 - [ ] Neural Networks
     - [ ] MLP
     - [ ] Convolutional
+
+Check issues tracker for a more comprehensive list.
