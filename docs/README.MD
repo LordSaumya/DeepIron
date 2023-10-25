@@ -22,6 +22,14 @@ A simple machine learning library built in Rust.
     - [ ] Adam
 - [ ] Neural Networks
     - [ ] MLP
+        - [ ] Forward Propagation
+        - [ ] Backward Propagation
     - [ ] Convolutional
-
-Check issues tracker for a more comprehensive list.
+        - [ ] Forward Propagation
+        - [ ] Backward Propagation
+- [ ] Regularisation
+    - [ ] L1
+    - [ ] L2
+- [ ] Normalisation
+    - [ ] Batch normalisation
+    - [ ] Dropout
