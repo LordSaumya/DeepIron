@@ -2,22 +2,31 @@ use std::path::Path;
 use polars::prelude::*;
 
 
-trait dataFrameTransformer {
-    fn transform(
+trait DataFrameTransformer {
+    fn transformByCol(
         &mut self,
         columns: &[&usize],
         unary_function: impl Fn(&Series) -> Series,
     ) -> Result<()>;
+
+    fn split(
+        &mut self,
+        train_size: f64
+    ) -> Result<(DataFrame, DataFrame)>;
 }
 
-
 impl DataFrameTransformer for DataFrame {
-    fn transform(&mut self, columns: &[&usize], unary_function: impl Fn(&Series) -> Series) -> Result<()> {
+    fn transformByCol(&mut self, columns: &[&usize], unary_function: impl Fn(&Series) -> Series) -> Result<()> {
         for (_, series) in self.get_columns() {
             let transformed_series = unary_function(series)?;
             self.with_column(transformed_series)?;
         }
         Ok(());
+    }
+
+    fn split(&mut self, train_size: f64) -> Result<(DataFrame, DataFrame)> {
+        let (train, test) = self.shuffle(train_size)?;
+        Ok((train, test))
     }
 }
 
