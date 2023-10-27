@@ -5,9 +5,11 @@ A simple machine learning library built in Rust.
 
 ## Features
 
-- [ ] Data Loading & Transforming
-    - [ ] CSV
-    - [ ] MNIST
+- [X] Data Loading & Transforming
+    - [X] Z and MinMax Normalisation
+    - [X] Transforms
+    - [X] Common transform functions (log, pow, etcetera)
+    - [X] Loading from CSV
 - [ ] Linear Regression
 - [ ] Logistic Regression
 - [ ] Loss Functions
