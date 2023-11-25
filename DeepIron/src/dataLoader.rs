@@ -1,7 +1,8 @@
 use polars::prelude::*;
 use std::path::Path;
+
 /// Trait for DataFrame transformation, including transforms and splits.
-trait DataFrameTransformer {
+pub trait DataFrameTransformer {
     fn transformByCol(
         &mut self,
         columns: &[&str],
@@ -10,7 +11,7 @@ trait DataFrameTransformer {
 
     fn split(&mut self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError>;
 
-    fn znormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError>;
+    fn zNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError>;
 
     fn minMaxNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError>;
 }
@@ -84,7 +85,7 @@ impl DataFrameTransformer for DataFrame {
     /// # Example
     /// 
     /// ```
-    /// df.znormCols(&["col1", "col2"]);
+    /// df.zNormCols(&["col1", "col2"]);
     /// ```
     fn zNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError> {
         for col in columns {
@@ -174,7 +175,7 @@ pub mod TransformerFunctions {
     /// # Example
     /// 
     /// ```
-    /// df.transform(&[0, 1], TransformerFunctions::identity());
+    /// df.transform(&["col1", "col2"], TransformerFunctions::identity());
     /// ```
     fn identity() -> impl Fn(&Series) -> Series {
         move |series| series.clone()
