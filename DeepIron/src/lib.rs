@@ -4,7 +4,7 @@ pub mod dataLoader;
 mod tests {
     use dataLoader::*;
     use polars::prelude::*;
-    use std::path::Path;
+    use std::path::Path;    
     use super::*;
     #[test]
     fn test_load_csv() {
@@ -21,15 +21,54 @@ mod tests {
     }
 
     #[test]
-    fn test_transform_by_col() {
+    fn test_transform_by_col_custom_funct() {
         // Create a simple DataFrame for testing
-        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1, 2, 3])]).unwrap();
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
 
         // Apply a transformation
         df.transformByCol(&["col1"], |s: &Series| s * 2).unwrap();
 
         // Check if the transformation is applied correctly
-        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[2, 4, 6])]).unwrap();
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[2.0, 4.0, 6.0])]).unwrap();
+        assert_eq!(df, expected_result);
+    }
+
+    #[test]
+    fn test_transform_by_col_identity_funct() {
+        // Create a simple DataFrame for testing
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
+
+        // Apply a transformation
+        df.transformByCol(&["col1"], TransformerFunctions::identity()).unwrap();
+
+        // Check if the transformation is applied correctly
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
+        assert_eq!(df, expected_result);
+    }
+
+    #[test]
+    fn test_transform_by_col_power_funct() {
+        // Create a simple DataFrame for testing
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
+
+        // Apply a transformation
+        df.transformByCol(&["col1"], TransformerFunctions::power(2.0)).unwrap();
+
+        // Check if the transformation is applied correctly
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 4.0, 9.0])]).unwrap();
+        assert_eq!(df, expected_result);
+    }
+
+    #[test]
+    fn test_transform_by_col_log_funct() {
+        // Create a simple DataFrame for testing
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 4.0])]).unwrap();
+
+        // Apply a transformation
+        df.transformByCol(&["col1"], TransformerFunctions::log(2.0)).unwrap();
+
+        // Check if the transformation is applied correctly
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[0.0, 1.0, 2.0])]).unwrap();
         assert_eq!(df, expected_result);
     }
 
