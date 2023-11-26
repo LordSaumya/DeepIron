@@ -5,16 +5,16 @@ use polars::series::Series;
 /// Trait for DataFrame transformation, including transforms and splits.
 pub trait DataFrameTransformer {
     fn transformByCol(
-        &mut self,
+        &self,
         columns: &[&str],
         unary_function: impl Fn(&Series) -> Series,
-    ) -> Result<(), PolarsError>;
+    ) -> Result<DataFrame, PolarsError>;
 
-    fn split(&mut self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError>;
+    fn split(&self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError>;
 
-    fn zNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError>;
+    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 
-    fn minMaxNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError>;
+    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 }
 
 /// Implement DataFrameTransformer for DataFrame.
@@ -28,25 +28,26 @@ impl DataFrameTransformer for DataFrame {
     ///
     /// # Returns
     ///
-    /// * `Result<(), PolarsError>` - An empty Result.
+    /// * `Result<DataFrame, PolarsError>` - A DataFrame containing the transformed columns.
     ///
     /// # Example
     ///
     /// ```
-    /// df.transformByCol(&["col1", "col2"], TransformerFunctions::identity());
+    /// df = df.transformByCol(&["col1", "col2"], TransformerFunctions::identity());
     /// ```
     fn transformByCol(
-        &mut self,
+        &self,
         columns: &[&str],
         unary_function: impl Fn(&Series) -> Series,
-    ) -> Result<(), PolarsError> {
+    ) -> Result<DataFrame, PolarsError> {
+        let mut df = self.clone();
         for col in columns {
             // get the column and transform it
             let series = self.column(col)?;
             let transformed_series = unary_function(series);
-            self.with_column(transformed_series)?;
+            df.with_column(transformed_series)?;
         }
-        Ok(())
+        Ok(df)
     }
 
     /// Split the DataFrame into two DataFrames.
@@ -64,7 +65,7 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// let (train, test) = df.split(0.8);
     /// ```
-    fn split(&mut self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError> {
+    fn split(&self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError> {
         let num_rows = self.height();
         let train_num_rows = (num_rows as f64 * train_size) as i64;
         let train = self.slice(0, train_num_rows as usize);
@@ -88,7 +89,9 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// df.zNormCols(&["col1", "col2"]);
     /// ```
-    fn zNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError> {
+    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+        let mut df = self.clone();
+
         for col in columns {
             let series: &Series = self.column(col)?;
             let mean: f64 = series.mean().unwrap();
@@ -98,9 +101,9 @@ impl DataFrameTransformer for DataFrame {
                 panic!("Standard deviation is not F64");
             };
             let transformed_series: Series = (series - mean) / std;
-            self.with_column(transformed_series)?;
+            df.with_column(transformed_series)?;
         }
-        Ok(())
+        Ok(df)
     }
 
     /// Min-max normalise the columns of the DataFrame.
@@ -118,15 +121,17 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// df.minMaxNormCols(&["col1", "col2"]);
     /// ```
-    fn minMaxNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError> {
+    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+        let mut df = self.clone();
+
         for col in columns {
             let series: &Series = self.column(col)?;
             let min: f64 = series.min().unwrap();
             let max: f64 = series.max().unwrap();
             let transformed_series: Series = (series - min) / (max - min);
-            self.with_column(transformed_series)?;
+            df.with_column(transformed_series)?;
         }
-        Ok(())
+        Ok(df)
     }
 }
 
