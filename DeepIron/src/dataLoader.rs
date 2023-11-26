@@ -17,22 +17,8 @@ pub trait DataFrameTransformer {
     fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 }
 
-pub trait TransformableDataFrameResult {
-    fn transformByCol(
-        &self,
-        columns: &[&str],
-        unary_function: impl Fn(&Series) -> Series,
-    ) -> Result<DataFrame, PolarsError>;
-
-    fn split(&self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError>;
-
-    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
-
-    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
-}
-
-/// Implement transformableResult for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
-impl TransformableDataFrameResult for Result<DataFrame, PolarsError> {
+/// Implement DataFrameTransformer for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
+impl DataFrameTransformer for Result<DataFrame, PolarsError> {
     fn transformByCol(
         &self,
         columns: &[&str],
