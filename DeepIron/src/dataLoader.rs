@@ -181,7 +181,7 @@ pub mod TransformerFunctions {
     /// ```
     /// df.transform(&["col1", "col2"], TransformerFunctions::identity());
     /// ```
-    fn identity() -> impl Fn(&Series) -> Series {
+    pub fn identity() -> impl Fn(&Series) -> Series {
         move |series: &Series| series.clone()
     }
 
@@ -194,16 +194,15 @@ pub mod TransformerFunctions {
     /// # Returns
     ///
     /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
-    fn power(power: f64) -> impl Fn(&Series) -> Series {
-        move |series: &Series| {
-            let s_pow: Series = series
+    pub fn power(power: f64) -> impl Fn(&Series) -> Series {
+        return move |series: &Series| {
+            let s_power: Series = series
                 .f64()
                 .expect("series was not an f64 dtype")
-                .into_iter()
-                .map(|opt_value| opt_value.map(|value| value.powf(power as f64)))
-                .collect();
-            s_pow
-        }
+                .apply(|value| value.map(|value| value.powf(power)))
+                .into();
+            s_power
+        };
     }
 
     /// Return a function that returns the log of a Series.
@@ -215,15 +214,14 @@ pub mod TransformerFunctions {
     /// # Returns
     ///
     /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
-    fn log(base: f64) -> impl Fn(&Series) -> Series {
-        move |series: &Series| {
+    pub fn log(base: f64) -> impl Fn(&Series) -> Series {
+        return move |series: &Series| {
             let s_log: Series = series
                 .f64()
                 .expect("series was not an f64 dtype")
-                .into_iter()
-                .map(|opt_value| opt_value.map(|value| value.log(base as f64)))
-                .collect();
+                .apply(|value| value.map(|value| value.log(base)))
+                .into();
             s_log
-        }
+        };
     }
 }
