@@ -108,9 +108,9 @@ mod tests {
 
         // Apply a transformation
         df = df
-        .transformByCol(&["col1"], TransformerFunctions::power(2.0)).unwrap()
-        .transformByCol(&["col1"], TransformerFunctions::log(2.0)).unwrap()
-        .transformByCol(&["col1"], TransformerFunctions::identity()).unwrap()
+        .transformByCol(&["col1"], TransformerFunctions::power(2.0))
+        .transformByCol(&["col1"], TransformerFunctions::log(2.0))
+        .transformByCol(&["col1"], TransformerFunctions::identity())
         .zNormCols(&["col1"]).unwrap();
         
         let std: f64 = f64::sqrt(8.0/3.0);
