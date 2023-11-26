@@ -26,7 +26,7 @@ mod tests {
         let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
 
         // Apply a transformation
-        df.transformByCol(&["col1"], |s: &Series| s * 2).unwrap();
+        df = df.transformByCol(&["col1"], |s: &Series| s * 2).unwrap();
 
         // Check if the transformation is applied correctly
         let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[2.0, 4.0, 6.0])]).unwrap();
@@ -39,7 +39,7 @@ mod tests {
         let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
 
         // Apply a transformation
-        df.transformByCol(&["col1"], TransformerFunctions::identity()).unwrap();
+        df = df.transformByCol(&["col1"], TransformerFunctions::identity()).unwrap();
 
         // Check if the transformation is applied correctly
         let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
@@ -52,7 +52,7 @@ mod tests {
         let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
 
         // Apply a transformation
-        df.transformByCol(&["col1"], TransformerFunctions::power(2.0)).unwrap();
+        df = df.transformByCol(&["col1"], TransformerFunctions::power(2.0)).unwrap();
 
         // Check if the transformation is applied correctly
         let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 4.0, 9.0])]).unwrap();
@@ -65,7 +65,7 @@ mod tests {
         let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 4.0])]).unwrap();
 
         // Apply a transformation
-        df.transformByCol(&["col1"], TransformerFunctions::log(2.0)).unwrap();
+        df = df.transformByCol(&["col1"], TransformerFunctions::log(2.0)).unwrap();
 
         // Check if the transformation is applied correctly
         let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[0.0, 1.0, 2.0])]).unwrap();
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn test_split() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Split the DataFrame
         let (train, test) = df.split(0.8).unwrap();
@@ -91,7 +91,7 @@ mod tests {
         let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Z-normalise the column
-        df.zNormCols(&["col1"]).unwrap();
+        df = df.zNormCols(&["col1"]).unwrap();
 
         let std: f64 = f64::sqrt(2.0);
         let mean: f64 = 3.0;
@@ -102,12 +102,32 @@ mod tests {
     }
 
     #[test]
+    fn test_chained_transformations() {
+        // Create a simple DataFrame for testing
+        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 4.0])]).unwrap();
+
+        // Apply a transformation
+        df = df
+        .transformByCol(&["col1"], TransformerFunctions::power(2.0)).unwrap()
+        .transformByCol(&["col1"], TransformerFunctions::log(2.0)).unwrap()
+        .transformByCol(&["col1"], TransformerFunctions::identity()).unwrap()
+        .zNormCols(&["col1"]).unwrap();
+        
+        let std: f64 = f64::sqrt(8.0/3.0);
+        let mean: f64 = 2.0;    
+
+        // Check if the transformation is applied correctly
+        let expected_result = DataFrame::new(vec![Series::new("col1", &[(0.0 - mean) / std, (2.0 - mean) / std, (4.0 - mean) / std])]).unwrap();
+        assert_eq!(df, expected_result);
+    }
+
+    #[test]
     fn test_min_max_norm_cols() {
         // Create a simple DataFrame for testing
         let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Min-max normalise the column
-        df.minMaxNormCols(&["col1"]).unwrap();
+        df = df.minMaxNormCols(&["col1"]).unwrap();
 
         // Check if the min-max normalisation is done correctly
         let expected_result = DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]).unwrap();
