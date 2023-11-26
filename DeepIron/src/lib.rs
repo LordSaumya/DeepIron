@@ -2,35 +2,41 @@ pub mod dataLoader;
 
 #[cfg(test)]
 mod tests {
+    use dataLoader::*;
+    use polars::prelude::*;
+    use std::path::Path;
     use super::*;
     #[test]
     fn test_load_csv() {
-        let path = Path::new("test_data.csv");
-        let result = dataLoader::DataLoader::loadCSV(path);
+        // Load the CSV file
+        let path: &Path = Path::new("test/loadTest.csv");
+        let result: Result<DataFrame, PolarsError> = dataLoader::DataLoader::loadCSV(path);
+
+        println!("{:?}", result);
 
         // Check if the result is Ok and the DataFrame is not empty
         assert!(result.is_ok());
-        let df = result.unwrap();
+        let df: DataFrame = result.expect("Failed to load CSV file");
         assert!(!df.is_empty());
     }
 
     #[test]
     fn test_transform_by_col() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1, 2, 3])]);
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1, 2, 3])]).unwrap();
 
         // Apply a transformation
-        df.transformByCol(&["col1"], |s| s * 2).unwrap();
+        df.transformByCol(&["col1"], |s: &Series| s * 2).unwrap();
 
         // Check if the transformation is applied correctly
-        let expected_result = DataFrame::new(vec![Series::new("col1", &[2, 4, 6])]);
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new("col1", &[2, 4, 6])]).unwrap();
         assert_eq!(df, expected_result);
     }
 
     #[test]
     fn test_split() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1, 2, 3, 4, 5])]);
+        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Split the DataFrame
         let (train, test) = df.split(0.8).unwrap();
@@ -43,26 +49,29 @@ mod tests {
     #[test]
     fn test_z_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1, 2, 3, 4, 5])]);
+        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
-        // Z-normalize the column
+        // Z-normalise the column
         df.zNormCols(&["col1"]).unwrap();
 
-        // Check if the z-normalization is done correctly
-        let expected_result = DataFrame::new(vec![Series::new("col1", &[-1.41421, -0.70711, 0.0, 0.70711, 1.41421])]);
+        let std: f64 = f64::sqrt(2.0);
+        let mean: f64 = 3.0;
+
+        // Check if the z-normalisation is done correctly
+        let expected_result = DataFrame::new(vec![Series::new("col1", &[(1.0 - mean) / std, (2.0 - mean) / std, (3.0 - mean) / std, (4.0 - mean) / std, (5.0 - mean) / std])]).unwrap(); 
         assert_eq!(df, expected_result);
     }
 
     #[test]
     fn test_min_max_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1, 2, 3, 4, 5])]);
+        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
-        // Min-max normalize the column
+        // Min-max normalise the column
         df.minMaxNormCols(&["col1"]).unwrap();
 
-        // Check if the min-max normalization is done correctly
-        let expected_result = DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]);
+        // Check if the min-max normalisation is done correctly
+        let expected_result = DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]).unwrap();
         assert_eq!(df, expected_result);
     }
 }
