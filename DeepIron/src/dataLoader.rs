@@ -1,5 +1,6 @@
+use polars::frame::DataFrame;
 use polars::prelude::*;
-use std::path::Path;
+use polars::series::Series;
 
 /// Trait for DataFrame transformation, including transforms and splits.
 pub trait DataFrameTransformer {
@@ -73,41 +74,45 @@ impl DataFrameTransformer for DataFrame {
     }
 
     /// Z-normalise the columns of the DataFrame.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `columns` - A slice of column indices to z-normalise.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Result<(), PolarsError>` - An empty Result.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// df.zNormCols(&["col1", "col2"]);
     /// ```
     fn zNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError> {
         for col in columns {
-            let series = self.column(col)?;
-            let mean = series.mean().unwrap();
-            let std = series.std().unwrap();
-            let transformed_series = (series - mean) / std;
+            let series: &Series = self.column(col)?;
+            let mean: f64 = series.mean().unwrap();
+            let std: f64 = if let AnyValue::Float64(value) = series.std_as_series(0).get(0).unwrap() {
+                value
+            } else {
+                panic!("Standard deviation is not F64");
+            };
+            let transformed_series: Series = (series - mean) / std;
             self.with_column(transformed_series)?;
         }
         Ok(())
     }
 
     /// Min-max normalise the columns of the DataFrame.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `columns` - A slice of columns to min-max normalise.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Result<(), PolarsError>` - An empty Result.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -115,21 +120,21 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     fn minMaxNormCols(&mut self, columns: &[&str]) -> Result<(), PolarsError> {
         for col in columns {
-            let series = self.column(col)?;
-            let min = series.min().unwrap();
-            let max = series.max().unwrap();
-            let transformed_series = (series - min) / (max - min);
+            let series: &Series = self.column(col)?;
+            let min: f64 = series.min().unwrap();
+            let max: f64 = series.max().unwrap();
+            let transformed_series: Series = (series - min) / (max - min);
             self.with_column(transformed_series)?;
         }
         Ok(())
     }
 }
 
-
-
 /// A set of functions for loading and transforming data into a Polars DataFrame.
 pub mod DataLoader {
-    use polars::prelude::{PolarsArray, PolarsError};
+    use polars::frame::DataFrame;
+    use polars::prelude::{PolarsError, CsvReader, SerReader};
+    use std::path::Path;
 
     /// Load a CSV file into a DataFrame.
     ///
@@ -148,17 +153,14 @@ pub mod DataLoader {
     /// ```
     pub fn loadCSV(path: &Path) -> Result<DataFrame, PolarsError> {
         let path = Path::new(path);
-        let df = match DataFrame::read_csv(path) {
-            Ok(df) => df,
-            Err(e) => PolarsError::from(e)
-        };
+        let df: DataFrame = CsvReader::from_path(path)?.has_header(true).finish().unwrap();
         Ok(df)
     }
 }
 
 /// A set of functions that return commonly-used series -> series functions for data transformations.
 ///
-/// 
+///
 /// # Example
 ///
 /// ```
@@ -166,44 +168,62 @@ pub mod DataLoader {
 /// df.transform(&["col1", "col2"], TransformerFunctions::power(2));
 /// ```
 pub mod TransformerFunctions {
+    use polars::prelude::*;
+    use polars::series::Series;
     /// Return a function that returns the identity of a Series.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// df.transform(&["col1", "col2"], TransformerFunctions::identity());
     /// ```
     fn identity() -> impl Fn(&Series) -> Series {
-        move |series| series.clone()
+        move |series: &Series| series.clone()
     }
 
     /// Return a function that returns the power of a Series.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `power` - The power to raise the Series to.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
     fn power(power: f64) -> impl Fn(&Series) -> Series {
-        move |series| series.pow(power)
+        move |series: &Series| {
+            let s_pow: Series = series
+                .f64()
+                .expect("series was not an f64 dtype")
+                .into_iter()
+                .map(|opt_value| opt_value.map(|value| value.powf(power as f64)))
+                .collect();
+            s_pow
+        }
     }
 
     /// Return a function that returns the log of a Series.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `base` - The base of the log.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
     fn log(base: f64) -> impl Fn(&Series) -> Series {
-        move |series| series.log(base)
+        move |series: &Series| {
+            let s_log: Series = series
+                .f64()
+                .expect("series was not an f64 dtype")
+                .into_iter()
+                .map(|opt_value| opt_value.map(|value| value.log(base as f64)))
+                .collect();
+            s_log
+        }
     }
 }
