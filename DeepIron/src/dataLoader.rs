@@ -82,7 +82,7 @@ impl DataFrameTransformer for DataFrame {
     ///
     /// # Returns
     ///
-    /// * `Result<(), PolarsError>` - An empty Result.
+    /// * `Result<DataFrame, PolarsError>` - A DataFrame containing the z-normalised columns.
     ///
     /// # Example
     ///
@@ -114,7 +114,7 @@ impl DataFrameTransformer for DataFrame {
     ///
     /// # Returns
     ///
-    /// * `Result<(), PolarsError>` - An empty Result.
+    /// * `Result<DataFrame, PolarsError>` - A DataFrame containing the min-max normalised columns.
     ///
     /// # Example
     ///
@@ -161,6 +161,7 @@ pub mod DataLoader {
         let df: DataFrame = CsvReader::from_path(path)?.has_header(true).finish().unwrap();
         Ok(df)
     }
+
 }
 
 /// A set of functions that return commonly-used series -> series functions for data transformations.
