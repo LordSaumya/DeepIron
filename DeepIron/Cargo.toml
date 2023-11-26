@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-path = "0.8.2"
 polars = "0.35.4"
+
+[lib]
+name = "DeepIron"
+path = "src/lib.rs"
+doctest = false
