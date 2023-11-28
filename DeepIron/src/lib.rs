@@ -1,10 +1,12 @@
 pub mod dataLoader;
+pub mod model;
+pub mod linearRegression;
 
 #[cfg(test)]
 mod tests {
     use dataLoader::*;
     use polars::prelude::*;
-    use std::path::Path;    
+    use std::path::Path;
     use super::*;
     #[test]
     fn test_load_csv() {
