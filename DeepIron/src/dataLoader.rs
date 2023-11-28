@@ -15,6 +15,8 @@ pub trait DataFrameTransformer {
     fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 
     fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
+
+    fn getColByIndex(&self, index: usize) -> Result<Series, PolarsError>;
 }
 
 /// Implement DataFrameTransformer for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
@@ -41,6 +43,11 @@ impl DataFrameTransformer for Result<DataFrame, PolarsError> {
     fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
         let df = self.as_ref().unwrap();
         df.minMaxNormCols(columns)
+    }
+
+    fn getColByIndex(&self, index: usize) -> Result<Series, PolarsError> {
+        let df = self.as_ref().unwrap();
+        df.getColByIndex(index)
     }
 }
 
@@ -159,6 +166,26 @@ impl DataFrameTransformer for DataFrame {
             df.with_column(transformed_series)?;
         }
         Ok(df)
+    }
+
+    /// Get a column of the DataFrame by index.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `index` - The index of the column to get.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Series, PolarsError>` - The column as a Series.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let col = df.getColByIndex(0);
+    /// ```
+    fn getColByIndex(&self, index: usize) -> Result<Series, PolarsError> {
+        let series: &[Series] = self.get_columns();
+        Ok(series[index].clone())
     }
 }
 
