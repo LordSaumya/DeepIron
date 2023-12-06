@@ -158,13 +158,13 @@ mod tests {
     #[test]
     fn test_min_max_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Min-max normalise the column
         df = df.min_max_norm_cols(&["col1"]).unwrap();
 
         // Check if the min-max normalisation is done correctly
-        let expected_result =
+        let expected_result: DataFrame =
             DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]).unwrap();
         assert_eq!(df, expected_result);
     }
@@ -211,12 +211,12 @@ mod tests {
     #[test]
     fn test_mean_squared_error_gradient_non_zeros() {
         // Create a dataframe and two simple series for testing
-        let x = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[4.0, 5.0, 6.0])]).unwrap();
+        let x: DataFrame = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[4.0, 5.0, 6.0])]).unwrap();
         let y: Series = Series::new("y", &[1.0, 2.0, 3.0]);
         let y_pred: Series = Series::new("y_pred", &[4.0, 5.0, 6.0]);
 
         // Compute the mean squared error
-        let gradient = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y_pred);
+        let gradient: Series = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y_pred);
 
         // Check if the mean squared error is computed correctly
         assert_eq!(gradient, Series::new("gradients", &[12.0, 30.0]));
@@ -225,14 +225,14 @@ mod tests {
     #[test]
     fn test_linear_model_fit_predict() {
         // Sample data
-        let x = DataFrame::new(vec![
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3]),
         ]);
 
-        let y = Series::new("target", vec![10.0, 20.0, 30.0]);
+        let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
-        let mut model = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
 
         // Fit the model
         assert!(model.fit(1000, 0.1).is_ok());

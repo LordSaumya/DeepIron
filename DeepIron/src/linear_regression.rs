@@ -67,8 +67,8 @@ impl model::Modeller for Linear {
         }
         
         for _ in 0..num_epochs {
-            let predictions = self.predict(&self.x)?;
-            let gradients = self.compute_gradients(&predictions);
+            let predictions: Series = self.predict(&self.x)?;
+            let gradients: (f64, Vec<f64>) = self.compute_gradients(&predictions);
 
             self.intercept -= learning_rate * gradients.0;
 

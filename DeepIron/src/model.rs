@@ -31,7 +31,7 @@ pub mod model {
 /// # Example
 ///
 /// ```
-/// let loss = lossFunctions::MeanSquaredError;
+/// let loss = loss_functions::MeanSquaredError;
 /// ```
 pub mod loss_functions {
     use polars::{series::Series, frame::DataFrame};
@@ -48,7 +48,7 @@ pub mod loss_functions {
     /// # Example
     ///
     /// ```
-    /// let loss = lossFunctions::MeanSquaredError;
+    /// let loss = loss_functions::MeanSquaredError;
     /// ```
     pub trait LossFunction {
         fn loss(&self, y: &Series, y_pred: &Series) -> f64;
