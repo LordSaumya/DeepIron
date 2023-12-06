@@ -1,4 +1,3 @@
-#[allow(non_snake_case)]
 pub mod data_loader;
 pub mod linear_regression;
 pub mod model;
@@ -8,15 +7,15 @@ mod tests {
     use super::*;
     use data_loader::*;
     use linear_regression::*;
-    use model::Model::Modeller;
+    use model::model::Modeller;
     use polars::prelude::*;
-    use model::LossFunctions::{LossFunction, LossFunctionType};
+    use model::loss_functions::{LossFunction, LossFunctionType};
     use std::path::Path;
     #[test]
     fn test_load_csv() {
         // Load the CSV file
         let path: &Path = Path::new("test/loadTest.csv");
-        let result: Result<DataFrame, PolarsError> = data_loader::DataLoader::loadCSV(path);
+        let result: Result<DataFrame, PolarsError> = data_loader::data_loader_util::load_csv(path);
 
         println!("{:?}", result);
 
@@ -33,7 +32,7 @@ mod tests {
             DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0])]).unwrap();
 
         // Apply a transformation
-        df = df.transformByCol(&["col1"], |s: &Series| s * 2).unwrap();
+        df = df.transform_cols(&["col1"], |s: &Series| s * 2).unwrap();
 
         // Check if the transformation is applied correctly
         let expected_result: DataFrame =
@@ -49,7 +48,7 @@ mod tests {
 
         // Apply a transformation
         df = df
-            .transformByCol(&["col1"], TransformerFunctions::identity())
+            .transform_cols(&["col1"], transformer_functions::identity())
             .unwrap();
 
         // Check if the transformation is applied correctly
@@ -66,7 +65,7 @@ mod tests {
 
         // Apply a transformation
         df = df
-            .transformByCol(&["col1"], TransformerFunctions::power(2.0))
+            .transform_cols(&["col1"], transformer_functions::power(2.0))
             .unwrap();
 
         // Check if the transformation is applied correctly
@@ -83,7 +82,7 @@ mod tests {
 
         // Apply a transformation
         df = df
-            .transformByCol(&["col1"], TransformerFunctions::log(2.0))
+            .transform_cols(&["col1"], transformer_functions::log(2.0))
             .unwrap();
 
         // Check if the transformation is applied correctly
@@ -111,7 +110,7 @@ mod tests {
         let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Z-normalise the column
-        df = df.zNormCols(&["col1"]).unwrap();
+        df = df.z_norm_cols(&["col1"]).unwrap();
 
         let std: f64 = f64::sqrt(2.0);
         let mean: f64 = 3.0;
@@ -138,10 +137,10 @@ mod tests {
 
         // Apply a transformation
         df = df
-            .transformByCol(&["col1"], TransformerFunctions::power(2.0))
-            .transformByCol(&["col1"], TransformerFunctions::log(2.0))
-            .transformByCol(&["col1"], TransformerFunctions::identity())
-            .zNormCols(&["col1"])
+            .transform_cols(&["col1"], transformer_functions::power(2.0))
+            .transform_cols(&["col1"], transformer_functions::log(2.0))
+            .transform_cols(&["col1"], transformer_functions::identity())
+            .z_norm_cols(&["col1"])
             .unwrap();
 
         let std: f64 = f64::sqrt(8.0 / 3.0);
@@ -162,7 +161,7 @@ mod tests {
         let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Min-max normalise the column
-        df = df.minMaxNormCols(&["col1"]).unwrap();
+        df = df.min_max_norm_cols(&["col1"]).unwrap();
 
         // Check if the min-max normalisation is done correctly
         let expected_result =

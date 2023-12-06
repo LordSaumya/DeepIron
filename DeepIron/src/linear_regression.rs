@@ -1,8 +1,6 @@
 use crate::data_loader::DataFrameTransformer;
 use crate::model::*;
-use crate::model::LossFunctions::{LossFunction, LossFunctionType};
-use polars::error::ErrString;
-use polars::error::PolarsError::ShapeMismatch;
+use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use polars::prelude::*;
 use polars::series::Series;
 
@@ -22,7 +20,7 @@ pub struct Linear {
     // Fields for training
     pub x: DataFrame,
     pub y: Series,
-    pub lossFunction: LossFunctionType,
+    pub loss_function: LossFunctionType,
 
     // Fields to store results
     pub intercept: f64,
@@ -41,19 +39,19 @@ impl Linear {
         Linear {
             x: x.clone(),
             y: y,
-            lossFunction: LossFunctionType::MeanSquaredError,
+            loss_function: LossFunctionType::MeanSquaredError,
             intercept: 0.0,
             coefficients: vec![0.0; x.width()],
         }
     }
 
-    fn computeGradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
+    fn compute_gradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
         let error: Series = &self.y - predictions;
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
         let intercept_gradient: f64 = error.mean().unwrap() * -2.0;
 
-        for (i, _) in self.coefficients.iter().enumerate() {
-            let gradient: f64 = self.lossFunction.gradient(&self.x, &self.y, predictions).mean().unwrap();
+        for (_i, _) in self.coefficients.iter().enumerate() {
+            let gradient: f64 = self.loss_function.gradient(&self.x, &self.y, predictions).mean().unwrap();
             gradients.push(gradient);
         }
 
@@ -61,7 +59,7 @@ impl Linear {
     }
 }
 
-impl Model::Modeller for Linear {
+impl model::Modeller for Linear {
     fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
         // Check if data are valid
         if self.x.shape().0 != self.y.len() {
@@ -70,7 +68,7 @@ impl Model::Modeller for Linear {
         
         for _ in 0..num_epochs {
             let predictions = self.predict(&self.x)?;
-            let gradients = self.computeGradients(&predictions);
+            let gradients = self.compute_gradients(&predictions);
 
             self.intercept -= learning_rate * gradients.0;
 

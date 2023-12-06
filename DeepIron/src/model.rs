@@ -10,7 +10,7 @@
 /// let y_pred = model.predict(&x);
 ///
 /// ```
-pub mod Model {
+pub mod model {
     use polars::prelude::*;
     use polars::series::Series;
 
@@ -21,7 +21,7 @@ pub mod Model {
 
     /// A trait that defines a model's fit and predict functions.
     pub trait Modeller {
-        fn fit(&mut self, numEpochs: u32, learningRate: f64) -> Result<(), PolarsError>;
+        fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError>;
         fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
     }
 }
@@ -33,7 +33,7 @@ pub mod Model {
 /// ```
 /// let loss = lossFunctions::MeanSquaredError;
 /// ```
-pub mod LossFunctions {
+pub mod loss_functions {
     use polars::{series::Series, frame::DataFrame};
     use polars::prelude::*;
     use crate::data_loader::DataFrameTransformer;
