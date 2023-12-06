@@ -1,4 +1,4 @@
-use crate::dataLoader::DataFrameTransformer;
+use crate::data_loader::DataFrameTransformer;
 use crate::model::*;
 use crate::model::LossFunctions::{LossFunction, LossFunctionType};
 use polars::error::ErrString;
@@ -86,7 +86,7 @@ impl Model::Modeller for Linear {
         let mut predictions: Series = Series::new("prediction", vec![self.intercept; x.height()]);
         
         for (i, coef) in self.coefficients.iter().enumerate() {
-            let feature_values: &Series = &x.getColByIndex(i).unwrap();
+            let feature_values: &Series = &x.get_col_by_index(i).unwrap();
             predictions = feature_values * *coef + predictions;
         }
         

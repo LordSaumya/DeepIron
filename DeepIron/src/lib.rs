@@ -1,12 +1,13 @@
-pub mod dataLoader;
-pub mod linearRegression;
+#[allow(non_snake_case)]
+pub mod data_loader;
+pub mod linear_regression;
 pub mod model;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dataLoader::*;
-    use linearRegression::*;
+    use data_loader::*;
+    use linear_regression::*;
     use model::Model::Modeller;
     use polars::prelude::*;
     use model::LossFunctions::{LossFunction, LossFunctionType};
@@ -15,7 +16,7 @@ mod tests {
     fn test_load_csv() {
         // Load the CSV file
         let path: &Path = Path::new("test/loadTest.csv");
-        let result: Result<DataFrame, PolarsError> = dataLoader::DataLoader::loadCSV(path);
+        let result: Result<DataFrame, PolarsError> = data_loader::DataLoader::loadCSV(path);
 
         println!("{:?}", result);
 

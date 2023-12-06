@@ -36,7 +36,7 @@ pub mod Model {
 pub mod LossFunctions {
     use polars::{series::Series, frame::DataFrame};
     use polars::prelude::*;
-    use crate::dataLoader::DataFrameTransformer;
+    use crate::data_loader::DataFrameTransformer;
 
     /// Enum of supported loss functions.
     pub enum LossFunctionType {
@@ -83,7 +83,7 @@ pub mod LossFunctions {
                     let diff: Series = y - y_pred;
                     let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
                     for i in 0..x.width() {
-                        let feature_values: Series = x.getColByIndex(i).unwrap();
+                        let feature_values: Series = x.get_col_by_index(i).unwrap();
                         let gradient: Series = &diff * &feature_values;
                         gradients.push(gradient.mean().unwrap() * -2.0);
                     }
