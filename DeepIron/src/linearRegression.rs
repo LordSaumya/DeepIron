@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use crate::dataLoader::DataFrameTransformer;
 use crate::model::*;
 use crate::model::LossFunctions::{LossFunction, LossFunctionType};
@@ -41,28 +39,24 @@ impl Linear {
     /// ```
     pub fn new(x: DataFrame, y: Series) -> Linear {
         Linear {
-            x: x,
+            x: x.clone(),
             y: y,
             lossFunction: LossFunctionType::MeanSquaredError,
             intercept: 0.0,
-            coefficients: vec![],
+            coefficients: vec![0.0; x.width()],
         }
     }
 
     fn computeGradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
-        // Use given loss function to compute gradients
+        let error: Series = &self.y - predictions;
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
-        let mut intercept_gradient: f64 = 0.0;
-    
-        for (i, coef) in self.coefficients.iter().enumerate() {
-            let feature_values: &Series = &self.x.getColByIndex(i).unwrap();
-            let gradient: f64 = self.lossFunction.gradient(&feature_values, predictions).mean().unwrap();
+        let intercept_gradient: f64 = error.mean().unwrap() * -2.0;
+
+        for (i, _) in self.coefficients.iter().enumerate() {
+            let gradient: f64 = self.lossFunction.gradient(&self.x, &self.y, predictions).mean().unwrap();
             gradients.push(gradient);
         }
-    
-        // Compute the intercept gradient
-        intercept_gradient = self.lossFunction.gradient(&self.y, predictions).mean().unwrap();
-    
+
         (intercept_gradient, gradients)
     }
 }
@@ -93,7 +87,7 @@ impl Model::Modeller for Linear {
         
         for (i, coef) in self.coefficients.iter().enumerate() {
             let feature_values: &Series = &x.getColByIndex(i).unwrap();
-            predictions = predictions + (feature_values * *coef);
+            predictions = feature_values * *coef + predictions;
         }
         
         Ok(predictions)

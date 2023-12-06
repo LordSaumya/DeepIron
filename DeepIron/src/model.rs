@@ -34,14 +34,28 @@ pub mod Model {
 /// let loss = lossFunctions::MeanSquaredError;
 /// ```
 pub mod LossFunctions {
-    use polars::series::Series;
+    use polars::{series::Series, frame::DataFrame};
+    use polars::prelude::*;
+    use crate::dataLoader::DataFrameTransformer;
 
     /// Enum of supported loss functions.
     pub enum LossFunctionType {
         MeanSquaredError,
     }
 
-    impl LossFunctionType {
+    /// A trait that defines a loss function.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let loss = lossFunctions::MeanSquaredError;
+    /// ```
+    pub trait LossFunction {
+        fn loss(&self, y: &Series, y_pred: &Series) -> f64;
+        fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
+    }
+
+    impl LossFunction for LossFunctionType {
         /// Compute the mean squared error between the predicted and actual values.
         ///
         /// # Arguments
@@ -53,7 +67,7 @@ pub mod LossFunctions {
         /// # Returns
         ///
         /// * `f64` - The mean squared error.
-        pub fn loss(&self, y: &Series, y_pred: &Series) -> f64 {
+        fn loss(&self, y: &Series, y_pred: &Series) -> f64 {
             match self {
                 LossFunctionType::MeanSquaredError => {
                     let diff: Series = y - y_pred;
@@ -63,25 +77,19 @@ pub mod LossFunctions {
             }
         }
 
-        pub fn gradient(&self, y: &Series, y_pred: &Series) -> Series {
+        fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series {
             match self {
                 LossFunctionType::MeanSquaredError => {
                     let diff: Series = y - y_pred;
-                    diff * -2.0
-                }
+                    let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
+                    for i in 0..x.width() {
+                        let feature_values: Series = x.getColByIndex(i).unwrap();
+                        let gradient: Series = &diff * &feature_values;
+                        gradients.push(gradient.mean().unwrap() * -2.0);
+                    }
+                    Series::new("gradients", gradients)
+                },
             }
         }
-    }
-
-    /// A trait that defines a loss function.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let loss = lossFunctions::MeanSquaredError;
-    /// ```
-    pub trait LossFunction {
-        fn loss(y: &Series, y_pred: &Series) -> f64;
-        fn gradient(y: &Series, y_pred: &Series) -> Series;
     }
 }
