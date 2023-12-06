@@ -9,6 +9,7 @@ mod tests {
     use linearRegression::*;
     use model::Model::Modeller;
     use polars::prelude::*;
+    use model::LossFunctions::{LossFunction, LossFunctionType};
     use std::path::Path;
     #[test]
     fn test_load_csv() {
@@ -169,20 +170,72 @@ mod tests {
     }
 
     #[test]
+    fn test_mean_squared_error_loss_zero() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the mean squared error
+        let mse = LossFunctionType::MeanSquaredError.loss(&x, &x);
+
+        // Check if the mean squared error is computed correctly
+        assert_eq!(mse, 0.0);
+    }
+
+    #[test]
+    fn test_mean_squared_error_loss_non_zero() {
+        // Create two simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+        let y: Series = Series::new("y", &[4.0, 5.0, 6.0]);
+
+        // Compute the mean squared error
+        let mse = LossFunctionType::MeanSquaredError.loss(&x, &y);
+
+        // Check if the mean squared error is computed correctly
+        assert_eq!(mse, 9.0);
+    }
+
+    #[test]
+    fn test_mean_squared_error_gradient_zeros() {
+        // Create a simple series and dataframe for testing
+        let x: DataFrame = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[1.0, 2.0, 3.0])]).unwrap();
+        let y: Series = Series::new("y", &[1.0, 2.0, 3.0]);
+
+
+        // Compute the mean squared error
+        let gradient = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y);
+
+        // Check if the mean squared error is computed correctly
+        assert_eq!(gradient, Series::new("gradients", &[0.0, 0.0]));
+    }
+
+    #[test]
+    fn test_mean_squared_error_gradient_non_zeros() {
+        // Create a dataframe and two simple series for testing
+        let x = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[4.0, 5.0, 6.0])]).unwrap();
+        let y: Series = Series::new("y", &[1.0, 2.0, 3.0]);
+        let y_pred: Series = Series::new("y_pred", &[4.0, 5.0, 6.0]);
+
+        // Compute the mean squared error
+        let gradient = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y_pred);
+
+        // Check if the mean squared error is computed correctly
+        assert_eq!(gradient, Series::new("gradients", &[12.0, 30.0]));
+    }
+
+    #[test]
     fn test_linear_model_fit_predict() {
         // Sample data
         let x = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3]),
-            Series::new("feature2", vec![4, 5, 6]),
         ]);
 
-        let y = Series::new("target", vec![10, 20, 30]);
+        let y = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
         let mut model = Linear::new(x.as_ref().unwrap().clone(), y.clone());
 
         // Fit the model
-        assert!(model.fit(100000, 0.0001).is_ok());
+        assert!(model.fit(1000, 0.1).is_ok());
 
         // Predict using the same data
         let predictions = model.predict(&x.unwrap()).unwrap();
