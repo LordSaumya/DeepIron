@@ -10,10 +10,10 @@ A simple machine learning library built in Rust.
     - [X] Transforms
     - [X] Common transform functions (log, pow, etcetera)
     - [X] Loading from CSV
-- [ ] Linear Regression
+- [X] Linear Regression
 - [ ] Logistic Regression
 - [ ] Loss Functions
-    - [ ] Mean Squared Error
+    - [X] Mean Squared Error
     - [ ] Cross Entropy
 - [ ] Performance evaluation metrics
     - [ ] Accuracy
