@@ -4,7 +4,7 @@ use polars::series::Series;
 
 /// Trait for DataFrame transformation, including transforms and splits.
 pub trait DataFrameTransformer {
-    fn transformByCol(
+    fn transform_cols(
         &self,
         columns: &[&str],
         unary_function: impl Fn(&Series) -> Series,
@@ -12,20 +12,22 @@ pub trait DataFrameTransformer {
 
     fn split(&self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError>;
 
-    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
+    fn z_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 
-    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
+    fn min_max_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
+
+    fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError>;
 }
 
 /// Implement DataFrameTransformer for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
 impl DataFrameTransformer for Result<DataFrame, PolarsError> {
-    fn transformByCol(
+    fn transform_cols(
         &self,
         columns: &[&str],
         unary_function: impl Fn(&Series) -> Series,
     ) -> Result<DataFrame, PolarsError> {
         let df = self.as_ref().unwrap();
-        df.transformByCol(columns, unary_function)
+        df.transform_cols(columns, unary_function)
     }
 
     fn split(&self, train_size: f64) -> Result<(DataFrame, DataFrame), PolarsError> {
@@ -33,14 +35,19 @@ impl DataFrameTransformer for Result<DataFrame, PolarsError> {
         df.split(train_size)
     }
 
-    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+    fn z_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
         let df = self.as_ref().unwrap();
-        df.zNormCols(columns)
+        df.z_norm_cols(columns)
     }
 
-    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+    fn min_max_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
         let df = self.as_ref().unwrap();
-        df.minMaxNormCols(columns)
+        df.min_max_norm_cols(columns)
+    }
+
+    fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError> {
+        let df = self.as_ref().unwrap();
+        df.get_col_by_index(index)
     }
 }
 
@@ -62,7 +69,7 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// df = df.transformByCol(&["col1", "col2"], TransformerFunctions::identity());
     /// ```
-    fn transformByCol(
+    fn transform_cols(
         &self,
         columns: &[&str],
         unary_function: impl Fn(&Series) -> Series,
@@ -116,13 +123,14 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// df.zNormCols(&["col1", "col2"]);
     /// ```
-    fn zNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+    fn z_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
         let mut df = self.clone();
 
         for col in columns {
             let series: &Series = self.column(col)?;
             let mean: f64 = series.mean().unwrap();
-            let std: f64 = if let AnyValue::Float64(value) = series.std_as_series(0).get(0).unwrap() {
+            let std: f64 = if let AnyValue::Float64(value) = series.std_as_series(0).get(0).unwrap()
+            {
                 value
             } else {
                 panic!("Standard deviation is not F64");
@@ -148,7 +156,7 @@ impl DataFrameTransformer for DataFrame {
     /// ```
     /// df.minMaxNormCols(&["col1", "col2"]);
     /// ```
-    fn minMaxNormCols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
+    fn min_max_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError> {
         let mut df = self.clone();
 
         for col in columns {
@@ -160,12 +168,32 @@ impl DataFrameTransformer for DataFrame {
         }
         Ok(df)
     }
+
+    /// Get a column of the DataFrame by index.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the column to get.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Series, PolarsError>` - The column as a Series.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let col = df.getColByIndex(0);
+    /// ```
+    fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError> {
+        let series: &[Series] = self.get_columns();
+        Ok(series[index].clone())
+    }
 }
 
 /// A set of functions for loading and transforming data into a Polars DataFrame.
-pub mod DataLoader {
+pub mod data_loader_util {
     use polars::frame::DataFrame;
-    use polars::prelude::{PolarsError, CsvReader, SerReader};
+    use polars::prelude::{CsvReader, PolarsError, SerReader};
     use std::path::Path;
 
     /// Load a CSV file into a DataFrame.
@@ -183,12 +211,14 @@ pub mod DataLoader {
     /// ```
     /// let df = loadCSV("data.csv");
     /// ```
-    pub fn loadCSV(path: &Path) -> Result<DataFrame, PolarsError> {
+    pub fn load_csv(path: &Path) -> Result<DataFrame, PolarsError> {
         let path = Path::new(path);
-        let df: DataFrame = CsvReader::from_path(path)?.has_header(true).finish().unwrap();
+        let df: DataFrame = CsvReader::from_path(path)?
+            .has_header(true)
+            .finish()
+            .unwrap();
         Ok(df)
     }
-
 }
 
 /// A set of functions that return commonly-used series -> series functions for data transformations.
@@ -200,7 +230,7 @@ pub mod DataLoader {
 /// df.transform(&["col1", "col2"], TransformerFunctions::identity());
 /// df.transform(&["col1", "col2"], TransformerFunctions::power(2));
 /// ```
-pub mod TransformerFunctions {
+pub mod transformer_functions {
     use polars::prelude::*;
     use polars::series::Series;
     /// Return a function that returns the identity of a Series.
