@@ -16,13 +16,94 @@ pub mod model {
 
     /// An enumeration of the types of supported models.
     pub enum ModelType {
+        /// Linear regression model
         Linear,
     }
 
     /// A trait that defines a model's fit and predict functions.
     pub trait Modeller {
+        /// Fit the model to the training data.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `num_epochs` - The number of epochs to train for.
+        /// 
+        /// * `learning_rate` - The initial learning rate to use during training.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<(), PolarsError>` - A result indicating if the model was fit successfully.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// let model = Model::Linear::new();
+        /// 
+        /// model.fit(100, 0.01);
+        /// 
+        /// ```
         fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError>;
+
+        /// Predict the target values for the given features.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The features to predict the target values for.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<Series, PolarsError>` - A result containing the predicted target values.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// 
+        /// let y_pred = model.predict(&x);
+        /// 
+        /// ```
         fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
+
+        /// Compute the accuracy of the model.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The features.
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<f64, PolarsError>` - A result containing the accuracy.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// 
+        /// let accuracy = model.accuracy(&x, &y);
+        /// 
+        /// ```
+        fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
+
+        /// Compute the loss of the model using its stored loss function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The features.
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<f64, PolarsError>` - A result containing the loss.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// 
+        /// let loss = model.loss(&x, &y);
+        /// 
+        /// ```
+        fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
     }
 }
 
@@ -40,6 +121,7 @@ pub mod loss_functions {
 
     /// Enum of supported loss functions.
     pub enum LossFunctionType {
+        /// Mean squared error loss function.
         MeanSquaredError,
     }
 
@@ -51,12 +133,55 @@ pub mod loss_functions {
     /// let loss = loss_functions::MeanSquaredError;
     /// ```
     pub trait LossFunction {
+        /// Compute the loss between the predicted and actual values.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// * `y_pred` - The predicted values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `f64` - The loss.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// let lossFn = loss_functions::MeanSquaredError;
+        /// 
+        /// let loss_value = lossFn.loss(&y, &y_pred);
+        /// 
+        /// ```
         fn loss(&self, y: &Series, y_pred: &Series) -> f64;
+
+        /// Compute the gradient of the loss function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The features.
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// * `y_pred` - The predicted values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The gradient.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// let lossFn = loss_functions::MeanSquaredError;
+        /// 
+        /// let gradient = lossFn.gradient(&x, &y, &y_pred);
+        /// 
+        /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
     }
 
     impl LossFunction for LossFunctionType {
-        /// Compute the mean squared error between the predicted and actual values.
+        /// Compute the mean squared error loss between the predicted and actual values.
         ///
         /// # Arguments
         ///
@@ -77,6 +202,28 @@ pub mod loss_functions {
             }
         }
 
+        /// Compute the gradient of the mean squared error loss function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The features.
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// * `y_pred` - The predicted values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The gradient.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// let lossFn = loss_functions::MeanSquaredError;
+        /// 
+        /// let gradient = lossFn.gradient(&x, &y, &y_pred);
+        /// 
+        /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series {
             match self {
                 LossFunctionType::MeanSquaredError => {
