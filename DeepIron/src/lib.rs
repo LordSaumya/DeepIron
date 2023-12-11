@@ -175,7 +175,7 @@ mod tests {
         let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
 
         // Compute the mean squared error
-        let mse = LossFunctionType::MeanSquaredError.loss(&x, &x);
+        let mse: f64 = LossFunctionType::MeanSquaredError.loss(&x, &x);
 
         // Check if the mean squared error is computed correctly
         assert_eq!(mse, 0.0);
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn test_linear_model_fit_predict() {
+    fn test_linear_model_fit_predict_single_feature() {
         // Sample data
         let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3]),
@@ -261,5 +261,161 @@ mod tests {
         assert_eq!(predictions.len(), y.len());
 
         assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_linear_model_fit_predict_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3]),
+            Series::new("feature2", vec![1, 2, 3]),
+        ]);
+
+        let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
+
+        // Create a linear model
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Predict using the same data
+        let predictions = model.predict(&x.unwrap()).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+        println!("Actual values: {:?}", y);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        // Print out the sums for debugging
+        println!("Sum of predictions: {:?}", predictions.sum::<f64>());
+        println!("Sum of actual values: {:?}", y.sum::<f64>());
+
+        // Check the sums
+        assert!(
+            (predictions.sum::<f64>().unwrap() - y.sum::<f64>().unwrap()).abs() < 1e-6,
+            "Sums do not match within epsilon"
+        );
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_linear_model_accuracy_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3]),
+        ]);
+
+        let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
+
+        // Create a linear model
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(1000, 0.1).is_ok());
+
+        // Compute the accuracy
+        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_linear_model_accuracy_non_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3, 4, 5]),
+        ]);
+
+        let y: Series = Series::new("target", vec![10.0, 25.0, 50.0, 56.0, 50.0]);
+
+        // Create a linear model
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.758).abs() < 1e-3,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_linear_model_accuracy_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3]),
+            Series::new("feature2", vec![1, 2, 3]),
+        ]);
+
+        let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
+
+        // Create a linear model
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_linear_model_accuracy_non_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3, 4, 5]),
+            Series::new("feature2", vec![1, 2, 3, 4, 5]),
+        ]);
+
+        let y: Series = Series::new("target", vec![10.0, 25.0, 50.0, 56.0, 50.0]);
+
+        // Create a linear model
+        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.758).abs() < 1e-3,
+            "Accuracy does not match within epsilon"
+        );
     }
 }
