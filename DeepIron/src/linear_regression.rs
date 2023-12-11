@@ -95,8 +95,8 @@ impl model::Modeller for Linear {
         let y_pred: Series = self.predict(x)?;
         // Calculate accuracy using r_squared
         let ss_res: f64 = ((y - &y_pred)*(y - &y_pred)).sum().unwrap();
-        let ss_tot: Series = (y - y.mean().unwrap())*(y - y.mean().unwrap());
-        let ss_tot: f64 = ss_tot.sum().unwrap();
+        let ss_tot_ser: Series = (y - y.mean().unwrap())*(y - y.mean().unwrap());
+        let ss_tot: f64 = ss_tot_ser.sum().unwrap();
         let r_squared: f64 = if ss_tot == 0.0 {1.0} else {1.0 - (ss_res / ss_tot)};
         Ok(r_squared)
     }
