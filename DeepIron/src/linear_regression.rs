@@ -90,4 +90,20 @@ impl model::Modeller for Linear {
         
         Ok(predictions)
     }
+
+    fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
+        let y_pred: Series = self.predict(x)?;
+        // Calculate accuracy using r_squared without using the loss function
+        let ss_res: f64 = ((y - &y_pred)*(y - &y_pred)).sum().unwrap();
+        let ss_tot_ser: Series = y - y.mean().unwrap();
+        let ss_tot: f64 = ss_tot_ser.sum().unwrap();
+        let r_squared: f64 = 1.0 - (ss_res / ss_tot);
+        Ok(r_squared)
+    }
+
+    fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
+        let y_pred: Series = self.predict(x)?;
+        let loss: f64 = self.loss_function.loss(y, &y_pred);
+        Ok(loss)
+    }
 }
