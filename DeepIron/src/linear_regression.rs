@@ -36,12 +36,13 @@ impl Linear {
     /// let model = Model::Linear::new();
     /// ```
     pub fn new(x: DataFrame, y: Series) -> Linear {
+        let x_width = x.width();
         Linear {
-            x: x.clone(),
+            x: x,
             y: y,
             loss_function: LossFunctionType::MeanSquaredError,
             intercept: 0.0,
-            coefficients: vec![0.0; x.width()],
+            coefficients: vec![0.0; x_width],
         }
     }
 
