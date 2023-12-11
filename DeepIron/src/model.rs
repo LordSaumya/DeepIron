@@ -23,6 +23,8 @@ pub mod model {
     pub trait Modeller {
         fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError>;
         fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
+        fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
+        fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
     }
 }
 
