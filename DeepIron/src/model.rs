@@ -180,6 +180,8 @@ pub mod loss_functions {
         ///
         /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
+
+        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 ;
     }
 
     impl LossFunction for LossFunctionType {
@@ -263,6 +265,33 @@ pub mod loss_functions {
                     }
                     Series::new("gradients", gradients)
                 }
+            }
+        }
+
+        /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
+        /// 
+        /// # Arguments
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// * `y_pred` - The predicted values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `f64` - The gradient.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
+        /// 
+        /// ```
+        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 {
+            match self {
+                LossFunctionType::MeanSquaredError => {
+                    (y - y_pred).mean().unwrap() * -2.0
+                },
             }
         }
     }
