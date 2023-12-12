@@ -47,7 +47,6 @@ impl Linear {
     }
 
     fn compute_gradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
-        let error: Series = &self.y - predictions;
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
         let intercept_gradient: f64 = self.loss_function.intercept_gradient( &self.y, predictions);
 
