@@ -11,7 +11,9 @@ A simple machine learning library built in Rust.
     - [X] Common transform functions (log, pow, etcetera)
     - [X] Loading from CSV
 - [X] Linear Regression
-- [ ] Logistic Regression
+- [X] Logistic Regression
+- [ ] Support Vector Machine
+- [ ] Decision Trees
 - [X] Loss Functions
     - [X] Mean Squared Error
     - [X] Binary Cross Entropy (Log Loss)
