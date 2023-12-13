@@ -12,11 +12,11 @@ A simple machine learning library built in Rust.
     - [X] Loading from CSV
 - [X] Linear Regression
 - [ ] Logistic Regression
-- [ ] Loss Functions
+- [X] Loss Functions
     - [X] Mean Squared Error
-    - [ ] Cross Entropy
+    - [X] Binary Cross Entropy (Log Loss)
 - [ ] Performance evaluation metrics
-    - [ ] Accuracy
+    - [X] Accuracy
     - [ ] Precision
     - [ ] Recall
     - [ ] F-Score
