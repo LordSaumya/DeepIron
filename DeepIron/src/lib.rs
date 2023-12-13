@@ -1,12 +1,14 @@
 pub mod data_loader;
 pub mod linear_regression;
 pub mod model;
+pub mod logistic_regression;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use data_loader::*;
     use linear_regression::*;
+    use logistic_regression::*;
     use model::model::Modeller;
     use polars::prelude::*;
     use model::loss_functions::{LossFunction, LossFunctionType};
@@ -94,7 +96,7 @@ mod tests {
     #[test]
     fn test_split() {
         // Create a simple DataFrame for testing
-        let df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Split the DataFrame
         let (train, test) = df.split(0.8).unwrap();
@@ -107,7 +109,7 @@ mod tests {
     #[test]
     fn test_z_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Z-normalise the column
         df = df.z_norm_cols(&["col1"]).unwrap();
@@ -116,7 +118,7 @@ mod tests {
         let mean: f64 = 3.0;
 
         // Check if the z-normalisation is done correctly
-        let expected_result = DataFrame::new(vec![Series::new(
+        let expected_result: DataFrame = DataFrame::new(vec![Series::new(
             "col1",
             &[
                 (1.0 - mean) / std,
@@ -202,7 +204,7 @@ mod tests {
 
 
         // Compute the mean squared error
-        let gradient = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y);
+        let gradient: Series = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y);
 
         // Check if the mean squared error is computed correctly
         assert_eq!(gradient, Series::new("gradients", &[0.0, 0.0]));
@@ -415,6 +417,216 @@ mod tests {
         // Check the accuracy
         assert!(
             (accuracy - 0.758).abs() < 1e-3,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_logistic_model_fit_predict_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3]),
+        ]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(1000, 0.1).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+
+        // Round the predictions
+        let predictions: Series = predictions.f64().unwrap()
+            .apply(|value: Option<f64>| 
+                if value.is_nan() { 
+                    None
+                } else {
+                    Some(value.unwrap().round())
+                }
+            ).into_series();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+        println!("Actual values: {:?}", y);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        // Print out the sums for debugging
+        println!("Sum of predictions: {:?}", predictions.sum::<f64>());
+        println!("Sum of actual values: {:?}", y.sum::<f64>());
+
+        // Check the sums
+        assert!(
+            (predictions.sum::<f64>().unwrap() - y.sum::<f64>().unwrap()).abs() < 1e-6,
+            "Sums do not match within epsilon"
+        );
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_logistic_model_fit_predict_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 3, 2]),
+            Series::new("feature2", vec![1, 3, 2]),
+        ]);
+
+        let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+
+        // Round the predictions
+        let predictions: Series = Logistic::round_predictions(&predictions);
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+        println!("Actual values: {:?}", y);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        // Print out the sums for debugging
+        println!("Sum of predictions: {:?}", predictions.sum::<f64>());
+        println!("Sum of actual values: {:?}", y.sum::<f64>());
+
+        // Check the sums
+        assert!(
+            (predictions.sum::<f64>().unwrap() - y.sum::<f64>().unwrap()).abs() < 1e-6,
+            "Sums do not match within epsilon"
+        );
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_logistic_model_accuracy_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3]),
+        ]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(1000, 0.1).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_logistic_model_accuracy_non_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 2, 3, 4, 5]),
+        ]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0, 0.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.8).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_logistic_model_accuracy_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 3, 2]),
+            Series::new("feature2", vec![1, 3, 2]),
+        ]);
+
+        let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_logistic_model_accuracy_non_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1, 3, 2, 4, 5]),
+            Series::new("feature2", vec![1, 3, 2, 4, 5]),
+        ]);
+
+        let y: Series = Series::new("target", vec![1.0, 0.0, 1.0, 0.0, 1.0]);
+
+        // Create a logistic model
+        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.6).abs() < 1e-6,
             "Accuracy does not match within epsilon"
         );
     }
