@@ -246,6 +246,7 @@ pub mod loss_functions {
         /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series {
             match self {
+                // gradient = 1/n * sum(2 * (y_pred - y) * x)
                 LossFunctionType::MeanSquaredError => {
                     let diff: Series = y - y_pred;
                     let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
@@ -256,6 +257,7 @@ pub mod loss_functions {
                     }
                     Series::new("gradients", gradients)
                 }
+                // gradient = 1/n * sum((y_pred - y) * x)
                 LossFunctionType::BinaryCrossEntropy => {
                     let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
                     for i in 0..x.width() {
@@ -292,6 +294,9 @@ pub mod loss_functions {
                 LossFunctionType::MeanSquaredError => {
                     (y - y_pred).mean().unwrap() * -2.0
                 },
+                LossFunctionType::BinaryCrossEntropy => {
+                    (y_pred - y).mean().unwrap()
+                }
             }
         }
     }
