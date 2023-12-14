@@ -2,6 +2,7 @@ pub mod data_loader;
 pub mod linear_regression;
 pub mod model;
 pub mod logistic_regression;
+pub mod support_vector_machine;
 
 #[cfg(test)]
 mod tests {

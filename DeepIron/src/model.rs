@@ -125,6 +125,8 @@ pub mod loss_functions {
         MeanSquaredError,
         /// Binary cross entropy loss function.
         BinaryCrossEntropy,
+        /// Hinge loss function.
+        Hinge,
     }
 
     /// A trait that defines a loss function.
@@ -181,7 +183,7 @@ pub mod loss_functions {
         /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
 
-        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 ;
+        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64;
     }
 
     impl LossFunction for LossFunctionType {
@@ -209,13 +211,27 @@ pub mod loss_functions {
                     let mut loss: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
-                    
+
                     for (y_i, y_pred_i) in y.into_iter().zip(y_pred.into_iter()) {
                         let y_i = y_i.unwrap();
                         let y_pred_i = y_pred_i.unwrap();
                         loss += y_i * y_pred_i.ln() + (1.0 - y_i) * (1.0 - y_pred_i).ln();
                     }
                     loss = -loss / y.len() as f64;
+
+                    loss
+                }
+                LossFunctionType::Hinge => {
+                    // loss = 1/n * sum(max(0, 1 - y * y_pred))
+                    let mut loss: f64 = 0.0;
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+
+                    for (y_i, y_pred_i) in y.into_iter().zip(y_pred.into_iter()) {
+                        let y_i: f64 = y_i.unwrap();
+                        let y_pred_i: f64 = y_pred_i.unwrap();
+                        loss += (1.0 - y_i * y_pred_i).max(0.0);
+                    }
 
                     loss
                 }
@@ -267,35 +283,63 @@ pub mod loss_functions {
                     }
                     Series::new("gradients", gradients)
                 }
+                LossFunctionType::Hinge => {
+                    let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+
+                    for i in 0..x.width() {
+                        let feature_values: Series = x.get_col_by_index(i).unwrap();
+                        let margin: f64 = y.get(i).unwrap() * y_pred.get(i).unwrap() * -1.0 + 1.0;
+                        if margin > 0.0 {
+                            let gradient: Series = &feature_values * (y.get(i).unwrap() * -1.0);
+                            gradients.push(gradient.sum().unwrap());
+                        } else {
+                            gradients.push(0.0);
+                        }
+                    }
+                    Series::new("gradients", gradients)
+                }
             }
         }
 
         /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `y` - The actual values.
-        /// 
+        ///
         /// * `y_pred` - The predicted values.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `f64` - The gradient.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
-        /// 
+        ///
         /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 {
             match self {
-                LossFunctionType::MeanSquaredError => {
-                    (y - y_pred).mean().unwrap() * -2.0
-                },
-                LossFunctionType::BinaryCrossEntropy => {
-                    (y_pred - y).mean().unwrap()
+                LossFunctionType::MeanSquaredError => (y - y_pred).mean().unwrap() * -2.0,
+                LossFunctionType::BinaryCrossEntropy => (y_pred - y).mean().unwrap() * 2.0,
+                LossFunctionType::Hinge => {
+                    let mut sum: f64 = 0.0;
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+                    for i in 0..y.len() {
+                        // Check if the margin is violated for this data point
+                        let margin: f64 = 1.0 - y.get(i).unwrap() * y_pred.get(i).unwrap();
+                
+                        // Add the margin violation (negative for misclassified points)
+                        if margin > 0.0 {
+                            sum += y.get(i).unwrap();
+                        }
+                    }
+                    -sum / y.len() as f64 // Average the sum across data points
                 }
             }
         }
