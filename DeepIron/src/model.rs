@@ -345,3 +345,88 @@ pub mod loss_functions {
         }
     }
 }
+
+/// A set of activation functions for use in training models.
+/// 
+/// # Example
+/// 
+/// ```
+/// 
+/// let activation = activation_functions::Sigmoid;
+/// 
+/// ```
+pub mod activation_functions {
+    use crate::data_loader::DataFrameTransformer;
+    use polars::prelude::*;
+    use polars::{frame::DataFrame, series::Series};
+
+    /// Enum of supported activation functions.
+    pub enum ActivationFunctionType {
+        /// Sigmoid activation function.
+        Sigmoid,
+    }
+
+    /// A trait that defines an activation function.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let activation = activation_functions::Sigmoid;
+    /// 
+    /// ```
+    pub trait ActivationFunction {
+        /// Compute the activation of the given values.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `values` - The values to activate.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The activated values.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let activated_values = activation.activate(&values);
+        /// 
+        /// ```
+        fn activate(&self, values: &Series) -> Series;
+    }
+
+    impl ActivationFunction for ActivationFunctionType {
+        /// Compute the activation of the given values.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `values` - The values to activate.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The activated values.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let activated_values = activation.activate(&values);
+        /// 
+        /// ```
+        fn activate(&self, values: &Series) -> Series {
+            match self {
+                ActivationFunctionType::Sigmoid => {
+                    // sigmoid(x) = 1 / (1 + e^-x)
+                    let mut activated_values: Vec<f64> = Vec::with_capacity(values.len());
+                    for value in values.f64().unwrap().into_iter() {
+                        let value: f64 = value.unwrap();
+                        activated_values.push(1.0 / (1.0 + (-value).exp()));
+                    }
+                    Series::new("activated_values", activated_values)
+                }
+            }
+        }
+    }
+
+}

@@ -1,5 +1,6 @@
 use crate::data_loader::DataFrameTransformer;
 use crate::model::loss_functions::{LossFunction, LossFunctionType};
+use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
 use crate::model::*;
 use polars::prelude::*;
 use polars::series::Series;
@@ -21,6 +22,7 @@ pub struct Logistic {
     pub x: DataFrame,
     pub y: Series,
     pub loss_function: LossFunctionType,
+    pub activation_function: ActivationFunctionType,
 
     // Fields to store results
     pub intercept: f64,
@@ -41,6 +43,7 @@ impl Logistic {
             x: x,
             y: y,
             loss_function: LossFunctionType::BinaryCrossEntropy,
+            activation_function: ActivationFunctionType::Sigmoid,
             intercept: 0.0,
             coefficients: vec![0.0; x_width],
         }
@@ -50,7 +53,7 @@ impl Logistic {
         let mut rounded_predictions: Vec<f64> = Vec::with_capacity(predictions.len());
 
         for prediction in predictions.f64().unwrap().into_iter() {
-            let prediction = prediction.unwrap();
+            let prediction: f64 = prediction.unwrap();
             if prediction > 0.5 {
                 rounded_predictions.push(1.0);
             } else {
@@ -109,16 +112,8 @@ impl model::Modeller for Logistic {
             predictions = feature_values * *coef + predictions;
         }
 
-        // Apply sigmoid function to get probabilities
-        let prediction_probabilities: ChunkedArray<Float64Type> = predictions.f64().unwrap().apply(|value| 
-            if value.is_nan() { 
-                None
-            } else {
-                Some(1.0 / (1.0 + (value.unwrap() * -1.0).exp()))
-            }
-        );
-        
-        Ok(prediction_probabilities.into_series())
+        // Apply and return the provided activation function
+        Ok(self.activation_function.activate(&predictions))
     }
 
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
