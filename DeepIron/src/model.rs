@@ -356,12 +356,13 @@ pub mod loss_functions {
 /// 
 /// ```
 pub mod activation_functions {
-    use crate::data_loader::DataFrameTransformer;
     use polars::prelude::*;
-    use polars::{frame::DataFrame, series::Series};
+    use polars::series::Series;
 
     /// Enum of supported activation functions.
     pub enum ActivationFunctionType {
+        /// Identity activation function (does nothing)
+        Identity,
         /// Sigmoid activation function.
         Sigmoid,
     }
@@ -416,6 +417,7 @@ pub mod activation_functions {
         /// ```
         fn activate(&self, values: &Series) -> Series {
             match self {
+                ActivationFunctionType::Identity => values.clone().rename("activated_values").clone(),
                 ActivationFunctionType::Sigmoid => {
                     // sigmoid(x) = 1 / (1 + e^-x)
                     let mut activated_values: Vec<f64> = Vec::with_capacity(values.len());
@@ -428,5 +430,117 @@ pub mod activation_functions {
             }
         }
     }
+}
 
+/// A set of kernel functions for use in SVMs
+///
+/// # Example
+///
+/// ```
+/// let kernel = kernel_functions::Linear;
+/// ```
+pub mod kernel_functions {
+    use polars::prelude::*;
+    use polars::series::Series;
+
+    /// Enum of supported kernel functions.
+    pub enum KernelFunctionType {
+        /// Linear kernel function.
+        Linear,
+        /// Polynomial kernel function with constant a and exponent b.
+        Polynomial(f64, f64),
+        /// Radial basis function kernel function with constant gamma.
+        RadialBasisFunction(f64),
+    }
+
+    /// A trait that defines a kernel function.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let kernel = kernel_functions::Linear;
+    /// ```
+    pub trait KernelFunction {
+        /// Compute the kernel of the given values.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The first set of values.
+        ///
+        /// * `y` - The second set of values.
+        ///
+        /// # Returns
+        ///
+        /// * `Series` - The kernel.
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// let kernel = kernel_functions::Linear;
+        ///
+        /// let kernel_value = kernel.kernel(&x, &y);
+        ///
+        /// ```
+        fn kernel(&self, x: &Series, y: &Series) -> Series;
+    }
+
+    impl KernelFunction for KernelFunctionType {
+        /// Compute the kernel of the given values.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The first set of values.
+        ///
+        /// * `y` - The second set of values.
+        ///
+        /// # Returns
+        ///
+        /// * `Series` - The kernel.
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// let kernel = kernel_functions::Linear;
+        ///
+        /// let kernel_value = kernel.kernel(&x, &y);
+        ///
+        /// ```
+        fn kernel(&self, x: &Series, y: &Series) -> Series {
+            match self {
+                KernelFunctionType::Linear => {
+                    // kernel = x * y
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push(x_i * y_i);
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+                KernelFunctionType::Polynomial(a, b) => {
+                    // kernel = (x * y + 1)^2
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push((x_i * y_i + a).powf(*b));
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+                KernelFunctionType::RadialBasisFunction(gamma) => {
+                    // kernel = e^(-gamma * ||x - y||^2)
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push((-gamma * (x_i - y_i).powi(2)).exp());
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+            }
+        }
+    }
 }
