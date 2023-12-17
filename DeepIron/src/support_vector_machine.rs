@@ -1,5 +1,7 @@
 use crate::data_loader::DataFrameTransformer;
 use crate::model::loss_functions::{LossFunction, LossFunctionType};
+use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
+use crate::model::kernel_functions::{KernelFunction, KernelFunctionType};
 use crate::model::*;
 use polars::prelude::*;
 use polars::series::Series;
@@ -21,6 +23,8 @@ pub struct SVM {
     pub x: DataFrame,
     pub y: Series,
     pub loss_function: LossFunctionType,
+    pub activation_function: ActivationFunctionType,
+    pub kernel_function: KernelFunctionType,
 
     // Fields to store results
     pub intercept: f64,
@@ -41,21 +45,33 @@ impl SVM {
             x: x,
             y: y,
             loss_function: LossFunctionType::Hinge,
+            activation_function: ActivationFunctionType::Identity,
+            kernel_function: KernelFunctionType::Linear,
             intercept: 0.0,
             coefficients: vec![0.0; x_width],
         }
     }
 
     fn compute_gradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
-        let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
-        let intercept_gradient: f64 = self.loss_function.intercept_gradient( &self.y, predictions);
+        let mut weight_gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
+        let bias_gradient: f64 = self.loss_function.intercept_gradient(&self.y, predictions);
+    
+        for (i, _) in self.coefficients.iter().enumerate() {
+            let x_column: Series = self.x.get_col_by_index(i).unwrap();
+            let x_column: &ChunkedArray<Float64Type> = x_column.f64().unwrap();
+    
+            // Calculate kernel values for each data point and prediction
+            let kernel_values: Series = self.kernel_function.kernel(&x_column.clone().into_series(), predictions);
 
-        for (_i, _) in self.coefficients.iter().enumerate() {
-            let gradient: f64 = self.loss_function.gradient(&self.x, &self.y, predictions).mean().unwrap();
-            gradients.push(gradient);
+            // Convert kernel values to dataframe
+            let kernel_values: DataFrame = DataFrame::new(vec![kernel_values]).unwrap();
+    
+            // Use kernel values directly in gradient calculation
+            let gradient = self.loss_function.gradient(&kernel_values, &self.y, predictions).mean().unwrap();
+            weight_gradients.push(gradient);
         }
-
-        (intercept_gradient, gradients)
+    
+        (bias_gradient, weight_gradients)
     }
 }
 
@@ -74,7 +90,7 @@ impl model::Modeller for SVM {
         if self.x.shape().0 != self.y.len() {
             return Err(PolarsError::ShapeMismatch("Shape mismatch between X and y".into()));
         }
-        
+
         for _ in 0..num_epochs {
             let predictions: Series = self.predict(&self.x)?;
             let gradients: (f64, Vec<f64>) = self.compute_gradients(&predictions);
@@ -93,14 +109,31 @@ impl model::Modeller for SVM {
         let mut predictions: Series = Series::new("prediction", vec![self.intercept; x.height()]);
         
         for (i, coefficient) in self.coefficients.iter().enumerate() {
-            let x_column: &ChunkedArray<Float64Type> = x.get_col_by_index(i).unwrap().f64().unwrap();
+            let x_column: Series = self.x.get_col_by_index(i).unwrap();
+            let x_column: &ChunkedArray<Float64Type> = x_column.f64().unwrap();
             let prediction: Series = (x_column * *coefficient).into_series();
             predictions = predictions + prediction;
         }
 
         // Run activation function
-        predictions = self.loss_function.activation(&predictions);
+        predictions = self.activation_function.activate(&predictions);
 
         Ok(predictions)
+    }
+
+    fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
+        let predictions: Series = self.predict(x)?;
+        let predictions: Series = self.activation_function.activate(&predictions);
+        let predictions: Series = predictions.gt_eq(y).unwrap().into_series();
+        let accuracy: f64 = predictions.sum::<u32>().unwrap() as f64 / predictions.len() as f64;
+
+        Ok(accuracy)
+    }
+
+    fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
+        let predictions: Series = self.predict(x)?;
+        let loss: f64 = self.loss_function.loss(&predictions, y);
+
+        Ok(loss)
     }
 }
