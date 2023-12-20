@@ -1,7 +1,7 @@
 pub mod data_loader;
 pub mod linear_regression;
-pub mod model;
 pub mod logistic_regression;
+pub mod model;
 pub mod support_vector_machine;
 
 #[cfg(test)]
@@ -10,10 +10,13 @@ mod tests {
     use data_loader::*;
     use linear_regression::*;
     use logistic_regression::*;
+    use model::loss_functions::{LossFunction, LossFunctionType};
+    use model::activation_functions::{ActivationFunction, ActivationFunctionType};
+    use model::kernel_functions::{KernelFunction, KernelFunctionType};
     use model::model::Modeller;
     use polars::prelude::*;
-    use model::loss_functions::{LossFunction, LossFunctionType};
     use std::path::Path;
+    use support_vector_machine::*;
     #[test]
     fn test_load_csv() {
         // Load the CSV file
@@ -97,7 +100,8 @@ mod tests {
     #[test]
     fn test_split() {
         // Create a simple DataFrame for testing
-        let df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let df: DataFrame =
+            DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Split the DataFrame
         let (train, test) = df.split(0.8).unwrap();
@@ -110,7 +114,8 @@ mod tests {
     #[test]
     fn test_z_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let mut df: DataFrame =
+            DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Z-normalise the column
         df = df.z_norm_cols(&["col1"]).unwrap();
@@ -161,7 +166,8 @@ mod tests {
     #[test]
     fn test_min_max_norm_cols() {
         // Create a simple DataFrame for testing
-        let mut df: DataFrame = DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
+        let mut df: DataFrame =
+            DataFrame::new(vec![Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0])]).unwrap();
 
         // Min-max normalise the column
         df = df.min_max_norm_cols(&["col1"]).unwrap();
@@ -200,9 +206,12 @@ mod tests {
     #[test]
     fn test_mean_squared_error_gradient_zeros() {
         // Create a simple series and dataframe for testing
-        let x: DataFrame = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[1.0, 2.0, 3.0])]).unwrap();
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("x1", &[1.0, 2.0, 3.0]),
+            Series::new("x2", &[1.0, 2.0, 3.0]),
+        ])
+        .unwrap();
         let y: Series = Series::new("y", &[1.0, 2.0, 3.0]);
-
 
         // Compute the mean squared error
         let gradient: Series = LossFunctionType::MeanSquaredError.gradient(&x, &y, &y);
@@ -214,7 +223,11 @@ mod tests {
     #[test]
     fn test_mean_squared_error_gradient_non_zeros() {
         // Create a dataframe and two simple series for testing
-        let x: DataFrame = DataFrame::new(vec![Series::new("x1", &[1.0, 2.0, 3.0]), Series::new("x2", &[4.0, 5.0, 6.0])]).unwrap();
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("x1", &[1.0, 2.0, 3.0]),
+            Series::new("x2", &[4.0, 5.0, 6.0]),
+        ])
+        .unwrap();
         let y: Series = Series::new("y", &[1.0, 2.0, 3.0]);
         let y_pred: Series = Series::new("y_pred", &[4.0, 5.0, 6.0]);
 
@@ -228,9 +241,8 @@ mod tests {
     #[test]
     fn test_linear_model_fit_predict_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
@@ -311,9 +323,8 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
@@ -339,9 +350,8 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3, 4, 5]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]);
 
         let y: Series = Series::new("target", vec![10.0, 25.0, 50.0, 56.0, 50.0]);
 
@@ -425,9 +435,8 @@ mod tests {
     #[test]
     fn test_logistic_model_fit_predict_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
@@ -441,14 +450,17 @@ mod tests {
         let predictions: Series = model.predict(&x.unwrap()).unwrap();
 
         // Round the predictions
-        let predictions: Series = predictions.f64().unwrap()
-            .apply(|value: Option<f64>| 
-                if value.is_nan() { 
+        let predictions: Series = predictions
+            .f64()
+            .unwrap()
+            .apply(|value: Option<f64>| {
+                if value.is_nan() {
                     None
                 } else {
                     Some(value.unwrap().round())
                 }
-            ).into_series();
+            })
+            .into_series();
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -521,9 +533,8 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
@@ -549,9 +560,8 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
-            Series::new("feature1", vec![1, 2, 3, 4, 5]),
-        ]);
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]);
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0, 0.0, 1.0]);
 
@@ -628,6 +638,305 @@ mod tests {
         // Check the accuracy
         assert!(
             (accuracy - 0.6).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_activation_function_sigmoid() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the sigmoid
+        let sigmoid: Series = ActivationFunctionType::Sigmoid.activate(&x);
+
+        // Check if the sigmoid is computed correctly
+        assert_eq!(
+            sigmoid,
+            Series::new("activated_values", &[1.0 / (1.0 + f64::exp(-1.0)), 1.0 / (1.0 + f64::exp(-2.0)), 1.0 / (1.0 + f64::exp(-3.0))])
+        );
+    }
+
+    #[test]
+    fn test_activation_function_identity() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the identity
+        let identity: Series = ActivationFunctionType::Identity.activate(&x);
+
+        // Check if the identity is computed correctly
+        assert_eq!(identity, Series::new("activated_values", &[1.0, 2.0, 3.0]));
+    }
+
+    #[test]
+    fn test_kernel_function_linear() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the linear kernel
+        let linear_kernel: Series = KernelFunctionType::Linear.kernel(&x, &x);
+
+        // Check if the linear kernel is computed correctly
+        assert_eq!(linear_kernel, Series::new("kernel", &[1.0, 4.0, 9.0]));
+    }
+
+    #[test]
+    fn test_kernel_function_polynomial() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the polynomial kernel
+        let polynomial_kernel: Series = KernelFunctionType::Polynomial(2.0,2.0).kernel(&x, &x);
+
+        // Check if the polynomial kernel is computed correctly
+        assert_eq!(
+            polynomial_kernel,
+            Series::new("kernel", &[9.0, 36.0, 121.0])
+        );
+    }
+
+    #[test]
+    fn test_kernel_function_rbf() {
+        // Create two simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+        let y: Series = Series::new("y", &[3.0, 2.0, 1.0]);
+
+        // Compute the rbf kernel
+        let rbf_kernel: Series = KernelFunctionType::RadialBasisFunction(2.0).kernel(&x, &y);
+
+        // Check if the rbf kernel is computed correctly
+        assert_eq!(
+            rbf_kernel,
+            Series::new("kernel", &[f64::exp(-8.0), f64::exp(0.0), f64::exp(-8.0)])
+        );
+    }
+
+    #[test]
+    fn test_hinge_loss_zero() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the hinge loss
+        let hinge_loss: f64 = LossFunctionType::Hinge.loss(&x, &x);
+
+        // Check if the hinge loss is computed correctly
+        assert_eq!(hinge_loss, 0.0);
+    }
+
+    #[test]
+    fn test_hinge_loss_non_zero() {
+        // Create two simple series for testing
+        let y: Series = Series::new("y", &[1.0, 1.0, 1.0]);
+        let y_pred: Series = Series::new("y_pred", &[1.0, 1.0, 0.0]);
+
+        // Compute the hinge loss
+        let hinge_loss: f64 = LossFunctionType::Hinge.loss(&y, &y_pred);
+
+        // Check if the hinge loss is computed correctly
+        assert_eq!(hinge_loss, 1.0);
+    }
+
+    #[test]
+    fn test_svm_model_fit_predict_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(1000, 0.1).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+
+        // Round the predictions
+        let predictions: Series = Logistic::round_predictions(&predictions);
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+        println!("Actual values: {:?}", y);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        // Print out the sums for debugging
+        println!("Sum of predictions: {:?}", predictions.sum::<f64>());
+        println!("Sum of actual values: {:?}", y.sum::<f64>());
+
+        // Check the sums
+        assert!(
+            (predictions.sum::<f64>().unwrap() - y.sum::<f64>().unwrap()).abs() < 1e-6,
+            "Sums do not match within epsilon"
+        );
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_svm_model_fit_predict_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0]),
+            Series::new("feature2", vec![1.0, 2.0, 3.0]),
+        ]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+
+        // Round the predictions
+        let predictions: Series = Logistic::round_predictions(&predictions);
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+        println!("Actual values: {:?}", y);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        // Print out the sums for debugging
+        println!("Sum of predictions: {:?}", predictions.sum::<f64>());
+        println!("Sum of actual values: {:?}", y.sum::<f64>());
+
+        // Check the sums
+        assert!(
+            (predictions.sum::<f64>().unwrap() - y.sum::<f64>().unwrap()).abs() < 1e-6,
+            "Sums do not match within epsilon"
+        );
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), y.len());
+
+        assert_eq!(predictions.sum::<f64>(), y.sum()); // A simple example
+    }
+
+    #[test]
+    fn test_svm_model_accuracy_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]);
+
+        let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(1000, 0.1).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.as_ref().unwrap(), &y).unwrap();
+
+        // Print out the actual and predicted values for debugging
+        println!("Actual values: {:?}", y);
+        println!("Predicted values: {:?}", model.predict(&x.unwrap()).unwrap());
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_svm_model_accuracy_non_perfect_single_feature() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> =
+            DataFrame::new(vec![Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0])]);
+
+        let y: Series = Series::new("target", vec![0.0, 0.0, 1.0, 0.0, 1.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.8).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_svm_model_accuracy_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0]),
+            Series::new("feature2", vec![1.0, 2.0, 3.0]),
+        ]);
+
+        let y: Series = Series::new("target", vec![1.0, 1.0, 0.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 1.0).abs() < 1e-6,
+            "Accuracy does not match within epsilon"
+        );
+    }
+
+    #[test]
+    fn test_svm_model_accuracy_non_perfect_multiple_features() {
+        // Sample data
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0]),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, -4.0, 5.0]),
+        ]);
+
+        let y: Series = Series::new("target", vec![1.0, 1.0, 0.0, 0.0, 1.0]);
+
+        // Create a SVM model
+        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+
+        // Fit the model
+        assert!(model.fit(10000, 0.01).is_ok());
+
+        // Compute the accuracy
+        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+
+        // Print out the accuracy for debugging
+        println!("Accuracy: {:?}", accuracy);
+
+        // Check the accuracy
+        assert!(
+            (accuracy - 0.4).abs() < 1e-6,
             "Accuracy does not match within epsilon"
         );
     }
