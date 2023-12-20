@@ -445,6 +445,8 @@ pub mod kernel_functions {
 
     /// Enum of supported kernel functions.
     pub enum KernelFunctionType {
+        /// Identity kernel function (does nothing)
+        Identity,
         /// Linear kernel function.
         Linear,
         /// Polynomial kernel function with constant a and exponent b.
@@ -507,6 +509,7 @@ pub mod kernel_functions {
         /// ```
         fn kernel(&self, x: &Series, y: &Series) -> Series {
             match self {
+                KernelFunctionType::Identity => x.clone().rename("kernel").clone(),
                 KernelFunctionType::Linear => {
                     // kernel = x * y
                     let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
