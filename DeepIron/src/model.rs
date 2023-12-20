@@ -513,7 +513,12 @@ pub mod kernel_functions {
                 KernelFunctionType::Linear => {
                     // kernel = x * y
                     let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
-                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
                         let x_i: f64 = x_i.unwrap();
                         let y_i: f64 = y_i.unwrap();
                         kernel.push(x_i * y_i);
@@ -524,7 +529,12 @@ pub mod kernel_functions {
                 KernelFunctionType::Polynomial(a, b) => {
                     // kernel = (x * y + 1)^2
                     let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
-                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
                         let x_i: f64 = x_i.unwrap();
                         let y_i: f64 = y_i.unwrap();
                         kernel.push((x_i * y_i + a).powf(*b));
@@ -535,7 +545,12 @@ pub mod kernel_functions {
                 KernelFunctionType::RadialBasisFunction(gamma) => {
                     // kernel = e^(-gamma * ||x - y||^2)
                     let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
-                    for (x_i, y_i) in x.f64().unwrap().into_iter().zip(y.f64().unwrap().into_iter()) {
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
                         let x_i: f64 = x_i.unwrap();
                         let y_i: f64 = y_i.unwrap();
                         kernel.push((-gamma * (x_i - y_i).powi(2)).exp());
