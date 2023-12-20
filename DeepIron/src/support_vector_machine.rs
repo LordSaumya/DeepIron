@@ -46,7 +46,7 @@ impl SVM {
             y: y,
             loss_function: LossFunctionType::Hinge,
             activation_function: ActivationFunctionType::Identity,
-            kernel_function: KernelFunctionType::Linear,
+            kernel_function: KernelFunctionType::Identity,
             intercept: 0.0,
             coefficients: vec![0.0; x_width],
         }
