@@ -67,7 +67,7 @@ impl SVM {
             let kernel_values: DataFrame = DataFrame::new(vec![kernel_values]).unwrap();
     
             // Use kernel values directly in gradient calculation
-            let gradient = self.loss_function.gradient(&kernel_values, &self.y, predictions).mean().unwrap();
+            let gradient: f64 = self.loss_function.gradient(&kernel_values, &self.y, predictions).mean().unwrap();
             weight_gradients.push(gradient);
         }
     
