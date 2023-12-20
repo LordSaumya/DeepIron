@@ -213,8 +213,8 @@ pub mod loss_functions {
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
 
                     for (y_i, y_pred_i) in y.into_iter().zip(y_pred.into_iter()) {
-                        let y_i = y_i.unwrap();
-                        let y_pred_i = y_pred_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        let y_pred_i: f64 = y_pred_i.unwrap();
                         loss += y_i * y_pred_i.ln() + (1.0 - y_i) * (1.0 - y_pred_i).ln();
                     }
                     loss = -loss / y.len() as f64;
@@ -222,7 +222,7 @@ pub mod loss_functions {
                     loss
                 }
                 LossFunctionType::Hinge => {
-                    // loss = 1/n * sum(max(0, 1 - y * y_pred))
+                    // loss = sum(max(0, 1 - y * y_pred))
                     let mut loss: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
@@ -288,14 +288,12 @@ pub mod loss_functions {
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
 
-                    for i in 0..x.width() {
-                        let feature_values: Series = x.get_col_by_index(i).unwrap();
-                        let margin: f64 = y.get(i).unwrap() * y_pred.get(i).unwrap() * -1.0 + 1.0;
-                        if margin > 0.0 {
-                            let gradient: Series = &feature_values * (y.get(i).unwrap() * -1.0);
-                            gradients.push(gradient.sum().unwrap());
-                        } else {
-                            gradients.push(0.0);
+                    for (y_i, feature_col) in y.into_iter().zip(y_pred.into_iter()).zip(x.iter()) {
+                        let margin: f64 = y_i.0.unwrap() - y_i.1.unwrap();
+                        let derivative: f64 = if margin > 0.0 { -1.0 } else { 0.0 };
+                        let feature_col: &ChunkedArray<Float64Type> = feature_col.f64().unwrap();
+                        for j in 0..feature_col.len() {
+                            gradients.push(derivative * feature_col.get(j).unwrap());
                         }
                     }
                     Series::new("gradients", gradients)
@@ -325,20 +323,22 @@ pub mod loss_functions {
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 {
             match self {
                 LossFunctionType::MeanSquaredError => (y - y_pred).mean().unwrap() * -2.0,
-                LossFunctionType::BinaryCrossEntropy => (y_pred - y).mean().unwrap() * 2.0,
+                LossFunctionType::BinaryCrossEntropy => (y - y_pred).mean().unwrap() * -2.0,
                 LossFunctionType::Hinge => {
                     let mut sum: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
-                    for i in 0..y.len() {
-                        // Check if the margin is violated for this data point
-                        let margin: f64 = 1.0 - y.get(i).unwrap() * y_pred.get(i).unwrap();
                 
-                        // Add the margin violation (negative for misclassified points)
+                    for i in 0..y.len() {
+                        // Calculate the correct margin difference
+                        let margin = y.get(i).unwrap() - y_pred.get(i).unwrap();
+                
+                        // Add the hinge derivative (-1 for violated margins)
                         if margin > 0.0 {
-                            sum += y.get(i).unwrap();
+                            sum -= 1.0; // Directly add -1 for violated margins
                         }
                     }
+                
                     -sum / y.len() as f64 // Average the sum across data points
                 }
             }
@@ -347,13 +347,13 @@ pub mod loss_functions {
 }
 
 /// A set of activation functions for use in training models.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
-/// 
+///
 /// let activation = activation_functions::Sigmoid;
-/// 
+///
 /// ```
 pub mod activation_functions {
     use polars::prelude::*;
@@ -368,52 +368,52 @@ pub mod activation_functions {
     }
 
     /// A trait that defines an activation function.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
-    /// 
+    ///
     /// let activation = activation_functions::Sigmoid;
-    /// 
+    ///
     /// ```
     pub trait ActivationFunction {
         /// Compute the activation of the given values.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The activated values.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let activated_values = activation.activate(&values);
-        /// 
+        ///
         /// ```
         fn activate(&self, values: &Series) -> Series;
     }
 
     impl ActivationFunction for ActivationFunctionType {
         /// Compute the activation of the given values.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The activated values.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let activated_values = activation.activate(&values);
-        /// 
+        ///
         /// ```
         fn activate(&self, values: &Series) -> Series {
             match self {
