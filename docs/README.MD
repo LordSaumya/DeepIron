@@ -12,20 +12,25 @@ A simple machine learning library built in Rust.
     - [X] Loading from CSV
 - [X] Linear Regression
 - [X] Logistic Regression
-- [ ] Support Vector Machine
-- [ ] Decision Trees
+- [X] Support Vector Machine
 - [X] Loss Functions
     - [X] Mean Squared Error
     - [X] Binary Cross Entropy (Log Loss)
+    - [X] Hinge Loss
 - [ ] Performance evaluation metrics
     - [X] Accuracy
+    - [X] Loss
     - [ ] Precision
     - [ ] Recall
     - [ ] F-Score
 - [ ] Activation Functions
-    - [ ] Sigmoid
+    - [X] Sigmoid
     - [ ] ReLU
     - [ ] Softmax
+- [ ] Kernel Functions
+    - [X] Linear
+    - [X] Polynomial
+    - [X] Radial Basis Function
 - [ ] Optimisers
     - [ ] Stochastic Gradient Descent
     - [ ] Adam
@@ -38,8 +43,9 @@ A simple machine learning library built in Rust.
         - [ ] Backward Propagation
 
 **Future additions**
+- [ ] Decision Tree
+- [ ] Random Forest
 - [ ] Dice Loss
-- [ ] Binary Cross-Entropy Loss
 - [ ] Pooling
     - [ ] Maxpool
     - [ ] Minpool
