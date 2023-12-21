@@ -125,6 +125,8 @@ pub mod loss_functions {
         MeanSquaredError,
         /// Binary cross entropy loss function.
         BinaryCrossEntropy,
+        /// Hinge loss function.
+        Hinge,
     }
 
     /// A trait that defines a loss function.
@@ -181,7 +183,7 @@ pub mod loss_functions {
         /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
 
-        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 ;
+        fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64;
     }
 
     impl LossFunction for LossFunctionType {
@@ -209,13 +211,27 @@ pub mod loss_functions {
                     let mut loss: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
-                    
+
                     for (y_i, y_pred_i) in y.into_iter().zip(y_pred.into_iter()) {
-                        let y_i = y_i.unwrap();
-                        let y_pred_i = y_pred_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        let y_pred_i: f64 = y_pred_i.unwrap();
                         loss += y_i * y_pred_i.ln() + (1.0 - y_i) * (1.0 - y_pred_i).ln();
                     }
                     loss = -loss / y.len() as f64;
+
+                    loss
+                }
+                LossFunctionType::Hinge => {
+                    // loss = sum(max(0, 1 - y * y_pred))
+                    let mut loss: f64 = 0.0;
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+
+                    for (y_i, y_pred_i) in y.into_iter().zip(y_pred.into_iter()) {
+                        let y_i: f64 = y_i.unwrap();
+                        let y_pred_i: f64 = y_pred_i.unwrap();
+                        loss += (1.0 - y_i * y_pred_i).max(0.0);
+                    }
 
                     loss
                 }
@@ -267,35 +283,67 @@ pub mod loss_functions {
                     }
                     Series::new("gradients", gradients)
                 }
+                // gradient = sum(-1 * x * y) if margin > 0 else 0
+                LossFunctionType::Hinge => {
+                    let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+
+                    for (y_i, feature_col) in y.into_iter().zip(y_pred.into_iter()).zip(x.iter()) {
+                        let margin: f64 = y_i.0.unwrap() - y_i.1.unwrap();
+                        let derivative: f64 = if margin > 0.0 { -1.0 } else { 0.0 };
+                        let feature_col: &ChunkedArray<Float64Type> = feature_col.f64().unwrap();
+                        for j in 0..feature_col.len() {
+                            gradients.push(derivative * feature_col.get(j).unwrap());
+                        }
+                    }
+                    Series::new("gradients", gradients)
+                }
             }
         }
 
         /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `y` - The actual values.
-        /// 
+        ///
         /// * `y_pred` - The predicted values.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `f64` - The gradient.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
-        /// 
+        ///
         /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 {
             match self {
-                LossFunctionType::MeanSquaredError => {
-                    (y - y_pred).mean().unwrap() * -2.0
-                },
-                LossFunctionType::BinaryCrossEntropy => {
-                    (y_pred - y).mean().unwrap()
+                // gradient = 1/n * -2 * sum((y_pred - y))
+                LossFunctionType::MeanSquaredError => (y - y_pred).mean().unwrap() * -2.0,
+                // gradient = 1/n * -2 * sum((y_pred - y))
+                LossFunctionType::BinaryCrossEntropy => (y - y_pred).mean().unwrap() * -2.0,
+                // gradient = sum(-1 * y) if margin > 0 else 0
+                LossFunctionType::Hinge => {
+                    let mut sum: f64 = 0.0;
+                    let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
+                    let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
+                
+                    for i in 0..y.len() {
+                        // Calculate the correct margin difference
+                        let margin = y.get(i).unwrap() - y_pred.get(i).unwrap();
+                
+                        // Add the hinge derivative (-1 for violated margins)
+                        if margin > 0.0 {
+                            sum -= 1.0; // Directly add -1 for violated margins
+                        }
+                    }
+                
+                    -sum / y.len() as f64 // Average the sum across data points
                 }
             }
         }
@@ -303,75 +351,77 @@ pub mod loss_functions {
 }
 
 /// A set of activation functions for use in training models.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
-/// 
+///
 /// let activation = activation_functions::Sigmoid;
-/// 
+///
 /// ```
 pub mod activation_functions {
-    use crate::data_loader::DataFrameTransformer;
     use polars::prelude::*;
-    use polars::{frame::DataFrame, series::Series};
+    use polars::series::Series;
 
     /// Enum of supported activation functions.
     pub enum ActivationFunctionType {
+        /// Identity activation function (does nothing)
+        Identity,
         /// Sigmoid activation function.
         Sigmoid,
     }
 
     /// A trait that defines an activation function.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
-    /// 
+    ///
     /// let activation = activation_functions::Sigmoid;
-    /// 
+    ///
     /// ```
     pub trait ActivationFunction {
         /// Compute the activation of the given values.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The activated values.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let activated_values = activation.activate(&values);
-        /// 
+        ///
         /// ```
         fn activate(&self, values: &Series) -> Series;
     }
 
     impl ActivationFunction for ActivationFunctionType {
         /// Compute the activation of the given values.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The activated values.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let activated_values = activation.activate(&values);
-        /// 
+        ///
         /// ```
         fn activate(&self, values: &Series) -> Series {
             match self {
+                ActivationFunctionType::Identity => values.clone().rename("activated_values").clone(),
                 ActivationFunctionType::Sigmoid => {
                     // sigmoid(x) = 1 / (1 + e^-x)
                     let mut activated_values: Vec<f64> = Vec::with_capacity(values.len());
@@ -384,5 +434,135 @@ pub mod activation_functions {
             }
         }
     }
+}
 
+/// A set of kernel functions for use in SVMs
+///
+/// # Example
+///
+/// ```
+/// let kernel = kernel_functions::Linear;
+/// ```
+pub mod kernel_functions {
+    use polars::prelude::*;
+    use polars::series::Series;
+
+    /// Enum of supported kernel functions.
+    pub enum KernelFunctionType {
+        /// Identity kernel function (does nothing)
+        Identity,
+        /// Linear kernel function.
+        Linear,
+        /// Polynomial kernel function with constant a and exponent b.
+        Polynomial(f64, f64),
+        /// Radial basis function kernel function with constant gamma.
+        RadialBasisFunction(f64),
+    }
+
+    /// A trait that defines a kernel function.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let kernel = kernel_functions::Linear;
+    /// ```
+    pub trait KernelFunction {
+        /// Compute the kernel of the given values.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The first set of values.
+        ///
+        /// * `y` - The second set of values.
+        ///
+        /// # Returns
+        ///
+        /// * `Series` - The kernel.
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// let kernel = kernel_functions::Linear;
+        ///
+        /// let kernel_value = kernel.kernel(&x, &y);
+        ///
+        /// ```
+        fn kernel(&self, x: &Series, y: &Series) -> Series;
+    }
+
+    impl KernelFunction for KernelFunctionType {
+        /// Compute the kernel of the given values.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The first set of values.
+        ///
+        /// * `y` - The second set of values.
+        ///
+        /// # Returns
+        ///
+        /// * `Series` - The kernel.
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// let kernel = kernel_functions::Linear;
+        ///
+        /// let kernel_value = kernel.kernel(&x, &y);
+        ///
+        /// ```
+        fn kernel(&self, x: &Series, y: &Series) -> Series {
+            match self {
+                KernelFunctionType::Identity => x.clone().rename("kernel").clone(),
+                KernelFunctionType::Linear => {
+                    // kernel = x * y
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push(x_i * y_i);
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+                KernelFunctionType::Polynomial(a, b) => {
+                    // kernel = (x * y + 1)^2
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push((x_i * y_i + a).powf(*b));
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+                KernelFunctionType::RadialBasisFunction(gamma) => {
+                    // kernel = e^(-gamma * ||x - y||^2)
+                    let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
+                    for (x_i, y_i) in x
+                        .f64()
+                        .unwrap()
+                        .into_iter()
+                        .zip(y.f64().unwrap().into_iter())
+                    {
+                        let x_i: f64 = x_i.unwrap();
+                        let y_i: f64 = y_i.unwrap();
+                        kernel.push((-gamma * (x_i - y_i).powi(2)).exp());
+                    }
+
+                    Series::new("kernel", kernel)
+                }
+            }
+        }
+    }
 }
