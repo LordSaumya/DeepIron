@@ -283,6 +283,7 @@ pub mod loss_functions {
                     }
                     Series::new("gradients", gradients)
                 }
+                // gradient = sum(-1 * x * y) if margin > 0 else 0
                 LossFunctionType::Hinge => {
                     let mut gradients: Vec<f64> = Vec::with_capacity(x.width());
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
@@ -322,8 +323,11 @@ pub mod loss_functions {
         /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64 {
             match self {
+                // gradient = 1/n * -2 * sum((y_pred - y))
                 LossFunctionType::MeanSquaredError => (y - y_pred).mean().unwrap() * -2.0,
+                // gradient = 1/n * -2 * sum((y_pred - y))
                 LossFunctionType::BinaryCrossEntropy => (y - y_pred).mean().unwrap() * -2.0,
+                // gradient = sum(-1 * y) if margin > 0 else 0
                 LossFunctionType::Hinge => {
                     let mut sum: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
