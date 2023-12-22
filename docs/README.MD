@@ -1,5 +1,7 @@
 # DeepIron
 
+![cover image](cover image.jpg)
+
 ## Description
 A basic machine learning library built in Rust.
 
