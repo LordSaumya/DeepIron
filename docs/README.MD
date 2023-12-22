@@ -1,6 +1,6 @@
 # DeepIron
 
-<img src="cover image.jpg" alt="DeepIron" width="300px"/>
+[<img src="cover image.jpg" alt="DeepIron" width="300px"/>](cover%20image.jpg)
 
 ## Description
 A basic machine learning library built in Rust.
