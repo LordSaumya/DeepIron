@@ -1,7 +1,7 @@
 # DeepIron
 
 ## Description
-A simple machine learning library built in Rust.
+A basic machine learning library built in Rust.
 
 ## Features
 
