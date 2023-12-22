@@ -1,6 +1,6 @@
 # DeepIron
 
-![cover image](./cover image.jpg)
+<img src="cover image.jpg" alt="DeepIron" width="300"/>
 
 ## Description
 A basic machine learning library built in Rust.
