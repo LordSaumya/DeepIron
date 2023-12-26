@@ -940,4 +940,16 @@ mod tests {
             "Accuracy does not match within epsilon"
         );
     }
+
+    #[test]
+    fn test_activation_function_relu() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[-1.0, 2.0, -3.0]);
+
+        // Compute the relu
+        let relu: Series = ActivationFunctionType::ReLU.activate(&x);
+
+        // Check if the relu is computed correctly
+        assert_eq!(relu, Series::new("activated_values", &[0.0, 2.0, 0.0]));
+    }
 }
