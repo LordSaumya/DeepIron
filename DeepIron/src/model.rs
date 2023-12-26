@@ -332,17 +332,17 @@ pub mod loss_functions {
                     let mut sum: f64 = 0.0;
                     let y: &ChunkedArray<Float64Type> = y.f64().unwrap();
                     let y_pred: &ChunkedArray<Float64Type> = y_pred.f64().unwrap();
-                
+
                     for i in 0..y.len() {
                         // Calculate the correct margin difference
                         let margin = y.get(i).unwrap() - y_pred.get(i).unwrap();
-                
+
                         // Add the hinge derivative (-1 for violated margins)
                         if margin > 0.0 {
                             sum -= 1.0; // Directly add -1 for violated margins
                         }
                     }
-                
+
                     -sum / y.len() as f64 // Average the sum across data points
                 }
             }
@@ -369,6 +369,8 @@ pub mod activation_functions {
         Identity,
         /// Sigmoid activation function.
         Sigmoid,
+        /// Rectified linear unit activation function.
+        ReLU,
     }
 
     /// A trait that defines an activation function.
@@ -421,15 +423,28 @@ pub mod activation_functions {
         /// ```
         fn activate(&self, values: &Series) -> Series {
             match self {
-                ActivationFunctionType::Identity => values.clone().rename("activated_values").clone(),
+                ActivationFunctionType::Identity => {
+                    values.clone().rename("activated_values").clone()
+                }
                 ActivationFunctionType::Sigmoid => {
                     // sigmoid(x) = 1 / (1 + e^-x)
-                    let mut activated_values: Vec<f64> = Vec::with_capacity(values.len());
-                    for value in values.f64().unwrap().into_iter() {
-                        let value: f64 = value.unwrap();
-                        activated_values.push(1.0 / (1.0 + (-value).exp()));
-                    }
-                    Series::new("activated_values", activated_values)
+                    values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(1.0 / (1.0 + (-value.unwrap()).exp())))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
+                }
+                ActivationFunctionType::ReLU => {
+                    // ReLU(x) = max(0, x)
+                    values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(value.unwrap().max(0.0)))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
                 }
             }
         }
