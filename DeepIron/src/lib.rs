@@ -1,4 +1,5 @@
 pub mod data_loader;
+pub mod layers;
 pub mod linear_regression;
 pub mod logistic_regression;
 pub mod model;
@@ -10,9 +11,9 @@ mod tests {
     use data_loader::*;
     use linear_regression::*;
     use logistic_regression::*;
-    use model::loss_functions::{LossFunction, LossFunctionType};
     use model::activation_functions::{ActivationFunction, ActivationFunctionType};
     use model::kernel_functions::{KernelFunction, KernelFunctionType};
+    use model::loss_functions::{LossFunction, LossFunctionType};
     use model::model::Modeller;
     use polars::prelude::*;
     use std::path::Path;
@@ -653,7 +654,14 @@ mod tests {
         // Check if the sigmoid is computed correctly
         assert_eq!(
             sigmoid,
-            Series::new("activated_values", &[1.0 / (1.0 + f64::exp(-1.0)), 1.0 / (1.0 + f64::exp(-2.0)), 1.0 / (1.0 + f64::exp(-3.0))])
+            Series::new(
+                "activated_values",
+                &[
+                    1.0 / (1.0 + f64::exp(-1.0)),
+                    1.0 / (1.0 + f64::exp(-2.0)),
+                    1.0 / (1.0 + f64::exp(-3.0))
+                ]
+            )
         );
     }
 
@@ -687,7 +695,7 @@ mod tests {
         let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
 
         // Compute the polynomial kernel
-        let polynomial_kernel: Series = KernelFunctionType::Polynomial(2.0,2.0).kernel(&x, &x);
+        let polynomial_kernel: Series = KernelFunctionType::Polynomial(2.0, 2.0).kernel(&x, &x);
 
         // Check if the polynomial kernel is computed correctly
         assert_eq!(
@@ -844,7 +852,10 @@ mod tests {
 
         // Print out the actual and predicted values for debugging
         println!("Actual values: {:?}", y);
-        println!("Predicted values: {:?}", model.predict(&x.unwrap()).unwrap());
+        println!(
+            "Predicted values: {:?}",
+            model.predict(&x.unwrap()).unwrap()
+        );
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -859,8 +870,10 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0])]);
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![Series::new(
+            "feature1",
+            vec![1.0, -2.0, 3.0, 4.0, 5.0],
+        )]);
 
         let y: Series = Series::new("target", vec![0.0, 0.0, 1.0, 0.0, 1.0]);
 
@@ -951,5 +964,58 @@ mod tests {
 
         // Check if the relu is computed correctly
         assert_eq!(relu, Series::new("activated_values", &[0.0, 2.0, 0.0]));
+    }
+
+    #[test]
+    fn test_activation_function_identity_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the identity gradient
+        let identity_gradient: Series = ActivationFunctionType::Identity.gradient(&x);
+
+        // Check if the identity gradient is computed correctly
+        assert_eq!(
+            identity_gradient,
+            Series::new("gradients", &[1.0, 1.0, 1.0])
+        );
+    }
+
+    #[test]
+    fn test_activation_function_sigmoid_gradient() {
+        fn sigmoid(x: f64) -> f64 {
+            1.0 / (1.0 + f64::exp(-x))
+        }
+
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the sigmoid gradient
+        let sigmoid_gradient: Series = ActivationFunctionType::Sigmoid.gradient(&x);
+
+        // Check if the sigmoid gradient is computed correctly
+        assert_eq!(
+            sigmoid_gradient,
+            Series::new(
+                "gradients",
+                &[
+                    sigmoid(1.0) * (1.0 - sigmoid(1.0)),
+                    sigmoid(2.0) * (1.0 - sigmoid(2.0)),
+                    sigmoid(3.0) * (1.0 - sigmoid(3.0))
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_activation_function_relu_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[-1.0, 2.0, -3.0]);
+
+        // Compute the relu gradient
+        let relu_gradient: Series = ActivationFunctionType::ReLU.gradient(&x);
+
+        // Check if the relu gradient is computed correctly
+        assert_eq!(relu_gradient, Series::new("gradients", &[0.0, 1.0, 0.0]));
     }
 }
