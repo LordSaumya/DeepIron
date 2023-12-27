@@ -14,12 +14,6 @@ pub mod model {
     use polars::prelude::*;
     use polars::series::Series;
 
-    /// An enumeration of the types of supported models.
-    pub enum ModelType {
-        /// Linear regression model
-        Linear,
-    }
-
     /// A trait that defines a model's fit and predict functions.
     pub trait Modeller {
         /// Fit the model to the training data.
@@ -183,6 +177,25 @@ pub mod loss_functions {
         /// ```
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
 
+        /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
+        /// 
+        /// # Arguments
+        /// 
+        /// * `y` - The actual values.
+        /// 
+        /// * `y_pred` - The predicted values.
+        /// 
+        /// # Returns
+        /// 
+        /// * `f64` - The gradient.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
+        /// 
+        /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64;
     }
 
@@ -364,6 +377,7 @@ pub mod activation_functions {
     use polars::series::Series;
 
     /// Enum of supported activation functions.
+    #[derive(Clone)]
     pub enum ActivationFunctionType {
         /// Identity activation function (does nothing)
         Identity,
@@ -401,6 +415,25 @@ pub mod activation_functions {
         ///
         /// ```
         fn activate(&self, values: &Series) -> Series;
+
+        ///Compute the gradient of the activation function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `values` - The values to activate.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The gradients.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let gradients = activation.gradient(&values);
+        /// 
+        /// ```
+        fn gradient(&self, values: &Series) -> Series;
     }
 
     impl ActivationFunction for ActivationFunctionType {
@@ -445,6 +478,33 @@ pub mod activation_functions {
                         .into_series()
                         .rename("activated_values")
                         .clone()
+                }
+            }
+        }
+
+        fn gradient(&self, values: &Series) -> Series {
+            match self {
+                ActivationFunctionType::Identity => {
+                    Series::new("gradients", vec![1.0; values.len()])
+                }
+                ActivationFunctionType::Sigmoid => {
+                    // sigmoid'(x) = sigmoid(x) * (1 - sigmoid(x))
+                    let activated_values = self.activate(values);
+                    let mut gradients: Vec<f64> = Vec::with_capacity(values.len());
+                    for value in activated_values.f64().unwrap().into_iter() {
+                        let value: f64 = value.unwrap();
+                        gradients.push(value * (1.0 - value));
+                    }
+                    Series::new("gradients", gradients)
+                }
+                ActivationFunctionType::ReLU => {
+                    // ReLU'(x) = 1 if x > 0 else 0
+                    let mut gradients: Vec<f64> = Vec::with_capacity(values.len());
+                    for value in values.f64().unwrap().into_iter() {
+                        let value: f64 = value.unwrap();
+                        gradients.push(if value > 0.0 { 1.0 } else { 0.0 });
+                    }
+                    Series::new("gradients", gradients)
                 }
             }
         }
