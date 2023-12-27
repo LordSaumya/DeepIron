@@ -251,7 +251,7 @@ pub mod loss_functions {
             }
         }
 
-        /// Compute the gradient of the mean squared error loss function.
+        /// Compute the gradient of the loss function with respect to each feature.
         ///
         /// # Arguments
         ///
