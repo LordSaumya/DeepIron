@@ -124,6 +124,17 @@ pub mod loss_functions {
         Hinge,
     }
 
+    /// Implement the Display trait for printing LossFunctionType.
+    impl std::fmt::Display for LossFunctionType {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                LossFunctionType::MeanSquaredError => write!(f, "Mean Squared Error"),
+                LossFunctionType::BinaryCrossEntropy => write!(f, "Binary Cross Entropy"),
+                LossFunctionType::Hinge => write!(f, "Hinge"),
+            }
+        }
+    }
+
     /// A trait that defines a loss function.
     ///
     /// # Example
@@ -386,6 +397,17 @@ pub mod activation_functions {
         Sigmoid,
         /// Rectified linear unit activation function.
         ReLU,
+    }
+
+    /// Implement the Display trait for printing ActivationFunctionType.
+    impl std::fmt::Display for ActivationFunctionType {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ActivationFunctionType::Identity => write!(f, "Identity"),
+                ActivationFunctionType::Sigmoid => write!(f, "Sigmoid"),
+                ActivationFunctionType::ReLU => write!(f, "ReLU"),
+            }
+        }
     }
 
     /// A trait that defines an activation function.
