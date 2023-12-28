@@ -114,6 +114,7 @@ pub mod loss_functions {
     use polars::{frame::DataFrame, series::Series};
 
     /// Enum of supported loss functions.
+    #[derive(Clone)]
     pub enum LossFunctionType {
         /// Mean squared error loss function.
         MeanSquaredError,
