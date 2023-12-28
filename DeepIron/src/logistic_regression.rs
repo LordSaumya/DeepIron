@@ -12,7 +12,7 @@ use polars::series::Series;
 /// ```
 /// let model = Model::Logistic::new();
 ///
-/// model.fit(&x, &y);
+/// model.fit(num_epochs, learning_rate);
 ///
 /// let y_pred = model.predict(&x);
 ///
