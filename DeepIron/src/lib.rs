@@ -4,6 +4,7 @@ pub mod linear_regression;
 pub mod logistic_regression;
 pub mod model;
 pub mod support_vector_machine;
+pub mod multilayer_perceptron;
 
 #[cfg(test)]
 mod tests {
