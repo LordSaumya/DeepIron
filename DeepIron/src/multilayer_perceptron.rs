@@ -257,7 +257,8 @@ impl model::Modeller for MLP {
 
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
-        let accuracy: f64 = y_pred.equal(y).sum::<i32>() as f64 / y_pred.len() as f64;
+        let accuracy: f64 = y_pred.equal(y).unwrap().sum().unwrap() as f64 / y_pred.len() as f64;
+        Ok(accuracy)
     }
 }
 
