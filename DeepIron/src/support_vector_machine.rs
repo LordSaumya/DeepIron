@@ -81,7 +81,7 @@ impl model::Modeller for SVM {
     /// # Example
     /// 
     /// ```
-    /// let model = Model::SVM::new();
+    /// let model = SVM::new();
     /// 
     /// model.fit(&x, &y);
     /// ```
