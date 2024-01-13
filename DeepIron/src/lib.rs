@@ -3,11 +3,13 @@ pub mod layers;
 pub mod linear_regression;
 pub mod logistic_regression;
 pub mod model;
-pub mod support_vector_machine;
 pub mod multilayer_perceptron;
+pub mod support_vector_machine;
 
 #[cfg(test)]
 mod tests {
+    use crate::layers::layer::LinearLayer;
+
     use super::*;
     use data_loader::*;
     use linear_regression::*;
@@ -16,9 +18,11 @@ mod tests {
     use model::kernel_functions::{KernelFunction, KernelFunctionType};
     use model::loss_functions::{LossFunction, LossFunctionType};
     use model::model::Modeller;
+    use multilayer_perceptron::*;
     use polars::prelude::*;
     use std::path::Path;
     use support_vector_machine::*;
+
     #[test]
     fn test_load_csv() {
         // Load the CSV file
