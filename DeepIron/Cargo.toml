@@ -6,7 +6,6 @@ keywords = ["rust", "machine learning", "deep learning", "data science"]
 authors = ["LordSaumya"]
 license = "MIT"
 repository = "https://github.com/LordSaumya/DeepIron"
-readme = "README.md"
 description = "A simple Rust library for machine learning and deep learning."
 
 [dependencies]
