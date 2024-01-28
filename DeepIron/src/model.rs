@@ -487,7 +487,7 @@ pub mod activation_functions {
                     values
                         .f64()
                         .unwrap()
-                        .apply(|value| Some(1.0 / (1.0 + (-value.unwrap()).exp())))
+                        .apply(|value| Some(1.0 / (1.0 + f64::exp(-value.unwrap()))))
                         .into_series()
                         .rename("activated_values")
                         .clone()

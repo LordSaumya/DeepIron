@@ -200,7 +200,7 @@ impl MLP {
     /// 
     /// A tuple of two vectors, each with a series of gradients for the weights and biases, respectively.
     pub fn backward(&self, inputs: Series, outputs: Series) -> (Vec<Series>, Vec<Series>) {
-        let mut upstream_gradient: Series = self.loss_function.gradient(&(inputs.into_frame()), &outputs, &self.y);
+        let mut upstream_gradient: Series = self.loss_function.gradient(&(inputs.clone().into_frame()), &outputs, &self.y);
         let mut gradients: Vec<Series> = Vec::new();
         let mut biases: Vec<Series> = Vec::new();
         for (i, layer) in self.layers.iter().enumerate().rev() {
@@ -226,14 +226,13 @@ impl model::Modeller for MLP {
     /// 
     /// ```
     fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
-        let mut x: Series = self.x.clone();
-        let mut y: Series = self.y.clone();
+        let x: Series = self.x.clone();
         for _ in 0..num_epochs {
             let y_pred: Series = self.forward(x.clone());
             let (weights_gradients, biases_gradients) = self.backward(x.clone(), y_pred.clone());
             for (i, layer) in self.layers.iter_mut().enumerate() {
-                let layer_weights_gradients: Series = weights_gradients[i] * learning_rate;
-                let layer_biases_gradients: Series = biases_gradients[i] * learning_rate;
+                let layer_weights_gradients: Series = &weights_gradients[i] * learning_rate;
+                let layer_biases_gradients: Series = &biases_gradients[i] * learning_rate;
                 
                 layer.weights = &layer.weights - (&(layer_weights_gradients));
                 layer.biases = &layer.biases - (&(layer_biases_gradients));
