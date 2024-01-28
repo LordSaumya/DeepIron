@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 polars = "0.35.4"
+rand = "0.8.5"
 
 [lib]
 name = "DeepIron"

@@ -13,7 +13,7 @@ use polars::series::Series;
 /// ```
 /// let model = Model::SVM::new();
 ///
-/// model.fit(&x, &y);
+/// model.fit(num_epochs, learning_rate);
 /// 
 /// let y_pred = model.predict(&x);
 /// 
@@ -81,7 +81,7 @@ impl model::Modeller for SVM {
     /// # Example
     /// 
     /// ```
-    /// let model = Model::SVM::new();
+    /// let model = SVM::new();
     /// 
     /// model.fit(&x, &y);
     /// ```

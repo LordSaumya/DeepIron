@@ -1,22 +1,32 @@
 pub mod data_loader;
+pub mod layers;
 pub mod linear_regression;
 pub mod logistic_regression;
 pub mod model;
+pub mod multilayer_perceptron;
 pub mod support_vector_machine;
 
 #[cfg(test)]
 mod tests {
+    use crate::layers::layer::LinearLayer;
+    use crate::model::activation_functions;
+
+    use self::model::loss_functions;
+
     use super::*;
     use data_loader::*;
     use linear_regression::*;
     use logistic_regression::*;
-    use model::loss_functions::{LossFunction, LossFunctionType};
     use model::activation_functions::{ActivationFunction, ActivationFunctionType};
     use model::kernel_functions::{KernelFunction, KernelFunctionType};
+    use model::loss_functions::{LossFunction, LossFunctionType};
     use model::model::Modeller;
+    use multilayer_perceptron::*;
+    use layers::layer::Layer;
     use polars::prelude::*;
     use std::path::Path;
     use support_vector_machine::*;
+
     #[test]
     fn test_load_csv() {
         // Load the CSV file
@@ -653,7 +663,14 @@ mod tests {
         // Check if the sigmoid is computed correctly
         assert_eq!(
             sigmoid,
-            Series::new("activated_values", &[1.0 / (1.0 + f64::exp(-1.0)), 1.0 / (1.0 + f64::exp(-2.0)), 1.0 / (1.0 + f64::exp(-3.0))])
+            Series::new(
+                "activated_values",
+                &[
+                    1.0 / (1.0 + f64::exp(-1.0)),
+                    1.0 / (1.0 + f64::exp(-2.0)),
+                    1.0 / (1.0 + f64::exp(-3.0))
+                ]
+            )
         );
     }
 
@@ -687,7 +704,7 @@ mod tests {
         let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
 
         // Compute the polynomial kernel
-        let polynomial_kernel: Series = KernelFunctionType::Polynomial(2.0,2.0).kernel(&x, &x);
+        let polynomial_kernel: Series = KernelFunctionType::Polynomial(2.0, 2.0).kernel(&x, &x);
 
         // Check if the polynomial kernel is computed correctly
         assert_eq!(
@@ -844,7 +861,10 @@ mod tests {
 
         // Print out the actual and predicted values for debugging
         println!("Actual values: {:?}", y);
-        println!("Predicted values: {:?}", model.predict(&x.unwrap()).unwrap());
+        println!(
+            "Predicted values: {:?}",
+            model.predict(&x.unwrap()).unwrap()
+        );
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -859,8 +879,10 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0])]);
+        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![Series::new(
+            "feature1",
+            vec![1.0, -2.0, 3.0, 4.0, 5.0],
+        )]);
 
         let y: Series = Series::new("target", vec![0.0, 0.0, 1.0, 0.0, 1.0]);
 
@@ -940,4 +962,158 @@ mod tests {
             "Accuracy does not match within epsilon"
         );
     }
+
+    #[test]
+    fn test_activation_function_relu() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[-1.0, 2.0, -3.0]);
+
+        // Compute the relu
+        let relu: Series = ActivationFunctionType::ReLU.activate(&x);
+
+        // Check if the relu is computed correctly
+        assert_eq!(relu, Series::new("activated_values", &[0.0, 2.0, 0.0]));
+    }
+
+    #[test]
+    fn test_activation_function_identity_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the identity gradient
+        let identity_gradient: Series = ActivationFunctionType::Identity.gradient(&x);
+
+        // Check if the identity gradient is computed correctly
+        assert_eq!(
+            identity_gradient,
+            Series::new("gradients", &[1.0, 1.0, 1.0])
+        );
+    }
+
+    #[test]
+    fn test_activation_function_sigmoid_gradient() {
+        fn sigmoid(x: f64) -> f64 {
+            1.0 / (1.0 + f64::exp(-x))
+        }
+
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[1.0, 2.0, 3.0]);
+
+        // Compute the sigmoid gradient
+        let sigmoid_gradient: Series = ActivationFunctionType::Sigmoid.gradient(&x);
+
+        // Check if the sigmoid gradient is computed correctly
+        assert_eq!(
+            sigmoid_gradient,
+            Series::new(
+                "gradients",
+                &[
+                    sigmoid(1.0) * (1.0 - sigmoid(1.0)),
+                    sigmoid(2.0) * (1.0 - sigmoid(2.0)),
+                    sigmoid(3.0) * (1.0 - sigmoid(3.0))
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_activation_function_relu_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", &[-1.0, 2.0, -3.0]);
+
+        // Compute the relu gradient
+        let relu_gradient: Series = ActivationFunctionType::ReLU.gradient(&x);
+
+        // Check if the relu gradient is computed correctly
+        assert_eq!(relu_gradient, Series::new("gradients", &[0.0, 1.0, 0.0]));
+    }
+
+    #[test]
+    fn test_linear_layer_new() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(Series::new("weights", [1.0, 2.0, 3.0]),Series::new("biases", [1.0, 2.0, 3.0])); 
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights, Series::new("weights", vec![1.0, 2.0, 3.0]));
+        assert_eq!(linear_layer.biases, Series::new("biases", vec![1.0, 2.0, 3.0]));
+    }
+
+    #[test]
+    fn test_linear_layer_zeroes() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::zeroes(3);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights, Series::new("weights", vec![0.0, 0.0, 0.0]));
+        assert_eq!(linear_layer.biases, Series::new("biases", vec![0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn test_linear_layer_new_random() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new_random(5, [-1.0, 1.0]);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights.len(), 5);
+        assert_eq!(linear_layer.biases.len(), 5);
+
+        // Check if the weights and biases are within the specified range
+        assert!(linear_layer.weights.f64().unwrap().min().unwrap() >= -1.0);
+        assert!(linear_layer.weights.f64().unwrap().max().unwrap() <= 1.0);
+    }
+
+    #[test]
+    fn test_linear_layer_forward() {
+        // parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+        // Compute the forward pass
+        let output: Series = linear_layer.forward(input.clone(), activation_function.clone());
+
+        assert_eq!(
+            output,
+            Series::new(
+                "activated_values",
+                &[
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(0).unwrap()),
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(1).unwrap()),
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(2).unwrap())
+                ]
+            )
+        );
+    }
+
+    // #[test]
+    // fn test_linear_layer_backward() {
+    //     // parameters
+    //     let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+    //     let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+    //     let activation_function: ActivationFunctionType = ActivationFunctionType::ReLU;
+    //     let loss_function: LossFunctionType = LossFunctionType::Hinge;
+    //     let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+    //     // Create a linear layer
+    //     let test_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+    //     // Compute the forward pass
+
+    //     let output: Series = test_layer.forward(input.clone(), activation_function.clone());
+
+    //     // Compute the backward pass
+    //     let (d_input, d_weights, d_biases): (Series, Series, Series) = test_layer.backward(
+    //         input.clone(),
+    //         output.clone(),
+    //         loss_function.clone,
+    //         activation_function,
+    //         loss_function.gradient(&input.clone().into_frame(), &output.clone(), &output.clone()),
+    //     );
+    // }
 }

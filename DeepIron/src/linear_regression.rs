@@ -11,7 +11,7 @@ use polars::series::Series;
 /// ```
 /// let model = Model::Linear::new();
 ///
-/// model.fit(&x, &y);
+/// model.fit(num_epochs, learning_rate);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -48,7 +48,7 @@ impl Linear {
 
     fn compute_gradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
-        let intercept_gradient: f64 = self.loss_function.intercept_gradient( &self.y, predictions);
+        let intercept_gradient: f64 = self.loss_function.intercept_gradient(&self.y, predictions);
 
         for (_i, _) in self.coefficients.iter().enumerate() {
             let gradient: f64 = self.loss_function.gradient(&self.x, &self.y, predictions).mean().unwrap();
