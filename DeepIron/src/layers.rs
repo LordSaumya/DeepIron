@@ -111,7 +111,7 @@ pub mod layer {
         /// # Example
         ///
         /// ```
-        /// let layer = LinearLayer::new_zeroes(3);
+        /// let layer = LinearLayer::zeroes(3);
         /// ```
         ///
         /// # Arguments
@@ -121,7 +121,7 @@ pub mod layer {
         /// # Returns
         ///
         /// A new linear layer of the given width with all weights and biases set to zero.
-        pub fn new_zeroes(width: usize) -> LinearLayer {
+        pub fn zeroes(width: usize) -> LinearLayer {
             LinearLayer {
                 weights: Series::new("weights", vec![0.0; width]),
                 biases: Series::new("biases", vec![0.0; width]),
@@ -175,7 +175,9 @@ pub mod layer {
 
     impl Layer for LinearLayer {
         fn forward(&self, inputs: Series, activation_function: ActivationFunctionType) -> Series {
-            activation_function.activate(&(&inputs * &self.weights + self.biases.clone()))
+            let dot_product: f64 = (&inputs * &self.weights).sum().unwrap();
+            let dot_prod_series = Series::new("dot_product", vec![dot_product; inputs.len()]);
+            activation_function.activate(&(dot_prod_series + self.biases.clone()))
         }
 
         fn backward(
