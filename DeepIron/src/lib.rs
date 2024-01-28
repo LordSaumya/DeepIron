@@ -9,6 +9,9 @@ pub mod support_vector_machine;
 #[cfg(test)]
 mod tests {
     use crate::layers::layer::LinearLayer;
+    use crate::model::activation_functions;
+
+    use self::model::loss_functions;
 
     use super::*;
     use data_loader::*;
@@ -19,6 +22,7 @@ mod tests {
     use model::loss_functions::{LossFunction, LossFunctionType};
     use model::model::Modeller;
     use multilayer_perceptron::*;
+    use layers::layer::Layer;
     use polars::prelude::*;
     use std::path::Path;
     use support_vector_machine::*;
@@ -1023,4 +1027,93 @@ mod tests {
         // Check if the relu gradient is computed correctly
         assert_eq!(relu_gradient, Series::new("gradients", &[0.0, 1.0, 0.0]));
     }
+
+    #[test]
+    fn test_linear_layer_new() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(Series::new("weights", [1.0, 2.0, 3.0]),Series::new("biases", [1.0, 2.0, 3.0])); 
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights, Series::new("weights", vec![1.0, 2.0, 3.0]));
+        assert_eq!(linear_layer.biases, Series::new("biases", vec![1.0, 2.0, 3.0]));
+    }
+
+    #[test]
+    fn test_linear_layer_zeroes() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::zeroes(3);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights, Series::new("weights", vec![0.0, 0.0, 0.0]));
+        assert_eq!(linear_layer.biases, Series::new("biases", vec![0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn test_linear_layer_new_random() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new_random(5, [-1.0, 1.0]);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights.len(), 5);
+        assert_eq!(linear_layer.biases.len(), 5);
+
+        // Check if the weights and biases are within the specified range
+        assert!(linear_layer.weights.f64().unwrap().min().unwrap() >= -1.0);
+        assert!(linear_layer.weights.f64().unwrap().max().unwrap() <= 1.0);
+    }
+
+    #[test]
+    fn test_linear_layer_forward() {
+        // parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+        // Compute the forward pass
+        let output: Series = linear_layer.forward(input.clone(), activation_function.clone());
+
+        assert_eq!(
+            output,
+            Series::new(
+                "activated_values",
+                &[
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(0).unwrap()),
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(1).unwrap()),
+                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(2).unwrap())
+                ]
+            )
+        );
+    }
+
+    // #[test]
+    // fn test_linear_layer_backward() {
+    //     // parameters
+    //     let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+    //     let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+    //     let activation_function: ActivationFunctionType = ActivationFunctionType::ReLU;
+    //     let loss_function: LossFunctionType = LossFunctionType::Hinge;
+    //     let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+    //     // Create a linear layer
+    //     let test_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+    //     // Compute the forward pass
+
+    //     let output: Series = test_layer.forward(input.clone(), activation_function.clone());
+
+    //     // Compute the backward pass
+    //     let (d_input, d_weights, d_biases): (Series, Series, Series) = test_layer.backward(
+    //         input.clone(),
+    //         output.clone(),
+    //         loss_function.clone,
+    //         activation_function,
+    //         loss_function.gradient(&input.clone().into_frame(), &output.clone(), &output.clone()),
+    //     );
+    // }
 }
