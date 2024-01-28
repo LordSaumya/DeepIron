@@ -23,9 +23,9 @@ A basic machine learning library built in Rust.
     - [ ] Precision
     - [ ] Recall
     - [ ] F-Score
-- [ ] Activation Functions
+- [X] Activation Functions
     - [X] Sigmoid
-    - [ ] ReLU
+    - [X] ReLU
     - [ ] Softmax
 - [X] Kernel Functions
     - [X] Linear
@@ -35,9 +35,9 @@ A basic machine learning library built in Rust.
     - [ ] Stochastic Gradient Descent
     - [ ] Adam
 - [ ] Neural Networks
-    - [ ] MLP
-        - [ ] Forward Propagation
-        - [ ] Backward Propagation
+    - [X] MLP
+        - [X] Forward Propagation
+        - [X] Backward Propagation
     - [ ] Convolutional
         - [ ] Forward Propagation
         - [ ] Backward Propagation
