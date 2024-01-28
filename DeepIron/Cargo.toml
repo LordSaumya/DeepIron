@@ -2,7 +2,8 @@
 name = "DeepIron"
 version = "0.1.0"
 edition = "2021"
-keywords = ["rust", "machine learning", "deep learning", "data science"]
+keywords = ["rust", "machine_learning", "deep_learning", "data_science"]
+categories = ["science"]
 authors = ["LordSaumya"]
 license = "MIT"
 repository = "https://github.com/LordSaumya/DeepIron"
