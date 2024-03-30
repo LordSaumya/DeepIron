@@ -5,7 +5,7 @@
 /// ```
 /// let model = Model::Linear::new();
 ///
-/// model.fit(100, 0.01);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -19,6 +19,10 @@ pub mod model {
         /// Fit the model to the training data.
         ///
         /// # Arguments
+        /// 
+        /// * `x` - The features to train the model on.
+        /// 
+        /// * `y` - The target values to train the model on.
         ///
         /// * `num_epochs` - The number of epochs to train for.
         ///
@@ -33,10 +37,16 @@ pub mod model {
         /// ```no_run
         /// let model = Model::Linear::new();
         ///
-        /// model.fit(100, 0.01);
+        /// model.fit(&x, &y, 100, 0.01);
         ///
         /// ```
-        fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError>;
+        fn fit(
+            &mut self,
+            x: &DataFrame,
+            y: &Series,
+            num_epochs: u32,
+            learning_rate: f64,
+        ) -> Result<(), PolarsError>;
 
         /// Predict the target values for the given features.
         ///

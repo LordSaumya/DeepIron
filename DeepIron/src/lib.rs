@@ -515,7 +515,7 @@ mod tests {
         let predictions: Series = model.predict(&x.unwrap()).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -772,7 +772,7 @@ mod tests {
         let predictions: Series = model.predict(&x.unwrap()).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -817,7 +817,7 @@ mod tests {
         let predictions: Series = model.predict(&x.unwrap()).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
