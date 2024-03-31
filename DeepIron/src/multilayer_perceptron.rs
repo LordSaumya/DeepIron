@@ -21,8 +21,6 @@ use polars::series::Series;
 /// ```
 pub struct MLP {
     // Fields for training
-    pub x: Series,
-    pub y: Series,
     pub loss_function: LossFunctionType,
     pub activation_functions: Vec<ActivationFunctionType>,
     pub layers: Vec<LinearLayer>,
@@ -36,10 +34,8 @@ impl MLP {
     /// ```
     /// let model = Model::MLP::new();
     /// ```
-    pub fn new(x: Series, y: Series, loss_function: LossFunctionType) -> MLP {
+    pub fn new(loss_function: LossFunctionType) -> MLP {
         MLP {
-            x,
-            y,
             loss_function,
             activation_functions: Vec::new(),
             layers: Vec::new(),
@@ -51,14 +47,10 @@ impl MLP {
     /// # Example
     /// 
     /// ```
-    /// let model = Model::MLP::new_with_layers(x, y, loss_function, layers, activation_functions);
+    /// let model = Model::MLP::new_with_layers(loss_function, layers, activation_functions);
     /// ```
     /// 
     /// # Arguments
-    /// 
-    /// * `x` - A series of inputs to the MLP.
-    /// 
-    /// * `y` - A series of outputs.
     /// 
     /// * `loss_function` - The loss function to use for the MLP.
     /// 
@@ -69,10 +61,8 @@ impl MLP {
     /// # Returns
     /// 
     /// A new MLP with the given layers.
-    pub fn new_with_layers(x: Series, y: Series, loss_function: LossFunctionType, layers: Vec<LinearLayer>, activation_functions: Vec<ActivationFunctionType>) -> MLP {
+    pub fn new_with_layers(loss_function: LossFunctionType, layers: Vec<LinearLayer>, activation_functions: Vec<ActivationFunctionType>) -> MLP {
         MLP {
-            x,
-            y,
             loss_function,
             activation_functions,
             layers,
@@ -106,8 +96,6 @@ impl MLP {
         new_layers.push(layer);
         new_activation_functions.push(activation_function);
         MLP {
-            x: self.x.clone(),
-            y: self.y.clone(),
             loss_function: self.loss_function.clone(),
             activation_functions: new_activation_functions,
             layers: new_layers,
@@ -145,8 +133,6 @@ impl MLP {
         new_layers[i] = layer;
         new_activation_functions[i] = activation_function;
         MLP {
-            x: self.x.clone(),
-            y: self.y.clone(),
             loss_function: self.loss_function.clone(),
             activation_functions: new_activation_functions,
             layers: new_layers,
@@ -199,8 +185,8 @@ impl MLP {
     /// # Returns
     /// 
     /// A tuple of two vectors, each with a series of gradients for the weights and biases, respectively.
-    pub fn backward(&self, inputs: Series, outputs: Series) -> (Vec<Series>, Vec<Series>) {
-        let mut upstream_gradient: Series = self.loss_function.gradient(&(inputs.clone().into_frame()), &outputs, &self.y);
+    pub fn backward(&self, inputs: &Series, outputs: &Series, true_values: &Series) -> (Vec<Series>, Vec<Series>) {
+        let mut upstream_gradient: Series = self.loss_function.gradient(&(inputs.clone().into_frame()), &true_values, &outputs);
         let mut gradients: Vec<Series> = Vec::new();
         let mut biases: Vec<Series> = Vec::new();
         for (i, layer) in self.layers.iter().enumerate().rev() {
@@ -225,11 +211,11 @@ impl model::Modeller for MLP {
     /// model.fit(num_epochs, learning_rate);
     /// 
     /// ```
-    fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
-        let x: Series = self.x.clone();
+    fn fit(&mut self, x: &DataFrame, y: &Series, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
+        let x: Series = x.get_col_by_index(0)?;
         for _ in 0..num_epochs {
             let y_pred: Series = self.forward(x.clone());
-            let (weights_gradients, biases_gradients) = self.backward(x.clone(), y_pred.clone());
+            let (weights_gradients, biases_gradients) = self.backward(&x, &y_pred, &y);
             for (i, layer) in self.layers.iter_mut().enumerate() {
                 let layer_weights_gradients: Series = &weights_gradients[i] * learning_rate;
                 let layer_biases_gradients: Series = &biases_gradients[i] * learning_rate;

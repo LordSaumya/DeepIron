@@ -105,8 +105,7 @@ impl model::Modeller for Logistic {
             predictions = feature_values * *coef + predictions;
         }
 
-        // Apply and return the provided activation function
-        Ok(activation_functions::ActivationFunctionType::Sigmoid.activate(&predictions))
+        Ok(ActivationFunctionType::Sigmoid.activate(&predictions))
     }
 
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {

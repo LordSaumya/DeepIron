@@ -69,6 +69,7 @@ impl model::Modeller for Linear {
 
             for (i, coef) in self.coefficients.iter_mut().enumerate() {
                 *coef -= learning_rate * gradients.1[i];
+                print!("{} ", coef);
             }
         }
 
