@@ -501,7 +501,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2]),
             Series::new("feature2", vec![1, 3, 2]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
 
@@ -543,8 +544,7 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: DataFrame =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
@@ -570,7 +570,8 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]).unwrap();
+        let x: DataFrame =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0, 0.0, 1.0]);
 
@@ -578,7 +579,7 @@ mod tests {
         let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(&x, &y, 1000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
         let accuracy: f64 = model.accuracy(&x, &y).unwrap();
@@ -599,7 +600,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2]),
             Series::new("feature2", vec![1, 3, 2]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
 
@@ -628,7 +630,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2, 4, 5]),
             Series::new("feature2", vec![1, 3, 2, 4, 5]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0, 0.0, 1.0]);
 
@@ -802,7 +805,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, 2.0, 3.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
@@ -860,10 +864,7 @@ mod tests {
 
         // Print out the actual and predicted values for debugging
         println!("Actual values: {:?}", y);
-        println!(
-            "Predicted values: {:?}",
-            model.predict(&x).unwrap()
-        );
+        println!("Predicted values: {:?}", model.predict(&x).unwrap());
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -881,7 +882,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![Series::new(
             "feature1",
             vec![1.0, -2.0, 3.0, 4.0, 5.0],
-        )]).unwrap();
+        )])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 0.0, 1.0, 0.0, 1.0]);
 
@@ -910,7 +912,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, 2.0, 3.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 1.0, 0.0]);
 
@@ -939,7 +942,8 @@ mod tests {
         let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0, -4.0, 5.0]),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 1.0, 0.0, 0.0, 1.0]);
 
