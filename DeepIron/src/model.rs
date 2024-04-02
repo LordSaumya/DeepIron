@@ -5,7 +5,7 @@
 /// ```
 /// let model = Model::Linear::new();
 ///
-/// model.fit(100, 0.01);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -20,6 +20,10 @@ pub mod model {
         ///
         /// # Arguments
         ///
+        /// * `x` - The features to train the model on.
+        ///
+        /// * `y` - The target values to train the model on.
+        ///
         /// * `num_epochs` - The number of epochs to train for.
         ///
         /// * `learning_rate` - The initial learning rate to use during training.
@@ -33,10 +37,16 @@ pub mod model {
         /// ```no_run
         /// let model = Model::Linear::new();
         ///
-        /// model.fit(100, 0.01);
+        /// model.fit(&x, &y, 100, 0.01);
         ///
         /// ```
-        fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError>;
+        fn fit(
+            &mut self,
+            x: &DataFrame,
+            y: &Series,
+            num_epochs: u32,
+            learning_rate: f64,
+        ) -> Result<(), PolarsError>;
 
         /// Predict the target values for the given features.
         ///
@@ -190,23 +200,23 @@ pub mod loss_functions {
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
 
         /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `y` - The actual values.
-        /// 
+        ///
         /// * `y_pred` - The predicted values.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `f64` - The gradient.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
-        /// 
+        ///
         /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64;
     }
@@ -440,21 +450,21 @@ pub mod activation_functions {
         fn activate(&self, values: &Series) -> Series;
 
         ///Compute the gradient of the activation function.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The gradients.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradients = activation.gradient(&values);
-        /// 
+        ///
         /// ```
         fn gradient(&self, values: &Series) -> Series;
     }

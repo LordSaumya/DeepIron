@@ -15,6 +15,7 @@ mod tests {
 
     use super::*;
     use data_loader::*;
+    use layers::layer::Layer;
     use linear_regression::*;
     use logistic_regression::*;
     use model::activation_functions::{ActivationFunction, ActivationFunctionType};
@@ -22,7 +23,6 @@ mod tests {
     use model::loss_functions::{LossFunction, LossFunctionType};
     use model::model::Modeller;
     use multilayer_perceptron::*;
-    use layers::layer::Layer;
     use polars::prelude::*;
     use std::path::Path;
     use support_vector_machine::*;
@@ -251,19 +251,18 @@ mod tests {
     #[test]
     fn test_linear_model_fit_predict_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Predict using the same data
-        let predictions = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -291,21 +290,22 @@ mod tests {
     #[test]
     fn test_linear_model_fit_predict_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3]),
             Series::new("feature2", vec![1, 2, 3]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Predict using the same data
-        let predictions = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -333,19 +333,18 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Compute the accuracy
-        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -360,19 +359,19 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]);
+        let x: DataFrame =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]).unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 25.0, 50.0, 56.0, 50.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -387,21 +386,22 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3]),
             Series::new("feature2", vec![1, 2, 3]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 20.0, 30.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -416,21 +416,22 @@ mod tests {
     #[test]
     fn test_linear_model_accuracy_non_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 2, 3, 4, 5]),
             Series::new("feature2", vec![1, 2, 3, 4, 5]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![10.0, 25.0, 50.0, 56.0, 50.0]);
 
         // Create a linear model
-        let mut model: Linear = Linear::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Linear = Linear::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -445,19 +446,18 @@ mod tests {
     #[test]
     fn test_logistic_model_fit_predict_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Predict using the same data
-        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Round the predictions
         let predictions: Series = predictions
@@ -498,24 +498,25 @@ mod tests {
     #[test]
     fn test_logistic_model_fit_predict_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2]),
             Series::new("feature2", vec![1, 3, 2]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Predict using the same data
-        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions, 0.5);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -543,19 +544,18 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]);
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -570,19 +570,19 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]);
+        let x: DataFrame =
+            DataFrame::new(vec![Series::new("feature1", vec![1, 2, 3, 4, 5])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0, 0.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -597,21 +597,22 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2]),
             Series::new("feature2", vec![1, 3, 2]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -626,21 +627,22 @@ mod tests {
     #[test]
     fn test_logistic_model_accuracy_non_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1, 3, 2, 4, 5]),
             Series::new("feature2", vec![1, 3, 2, 4, 5]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 0.0, 1.0, 0.0, 1.0]);
 
         // Create a logistic model
-        let mut model: Logistic = Logistic::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: Logistic = Logistic::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -757,22 +759,22 @@ mod tests {
     #[test]
     fn test_svm_model_fit_predict_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]);
+        let x: DataFrame =
+            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Predict using the same data
-        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions, 0.5);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -800,24 +802,25 @@ mod tests {
     #[test]
     fn test_svm_model_fit_predict_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, 2.0, 3.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Predict using the same data
-        let predictions: Series = model.predict(&x.unwrap()).unwrap();
+        let predictions: Series = model.predict(&x).unwrap();
 
         // Round the predictions
-        let predictions: Series = Logistic::round_predictions(&predictions);
+        let predictions: Series = Logistic::classify(&predictions, 0.5);
 
         // Print out the values for debugging
         println!("Predictions: {:?}", predictions);
@@ -845,26 +848,23 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> =
-            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]);
+        let x: DataFrame =
+            DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0])]).unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 1.0, 1.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(1000, 0.1).is_ok());
+        assert!(model.fit(&x, &y, 1000, 0.1).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.as_ref().unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the actual and predicted values for debugging
         println!("Actual values: {:?}", y);
-        println!(
-            "Predicted values: {:?}",
-            model.predict(&x.unwrap()).unwrap()
-        );
+        println!("Predicted values: {:?}", model.predict(&x).unwrap());
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -879,21 +879,22 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_non_perfect_single_feature() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![Series::new(
+        let x: DataFrame = DataFrame::new(vec![Series::new(
             "feature1",
             vec![1.0, -2.0, 3.0, 4.0, 5.0],
-        )]);
+        )])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![0.0, 0.0, 1.0, 0.0, 1.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -908,21 +909,22 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, 2.0, 3.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 1.0, 0.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -937,21 +939,22 @@ mod tests {
     #[test]
     fn test_svm_model_accuracy_non_perfect_multiple_features() {
         // Sample data
-        let x: Result<DataFrame, PolarsError> = DataFrame::new(vec![
+        let x: DataFrame = DataFrame::new(vec![
             Series::new("feature1", vec![1.0, -2.0, 3.0, 4.0, 5.0]),
             Series::new("feature2", vec![1.0, 2.0, 3.0, -4.0, 5.0]),
-        ]);
+        ])
+        .unwrap();
 
         let y: Series = Series::new("target", vec![1.0, 1.0, 0.0, 0.0, 1.0]);
 
         // Create a SVM model
-        let mut model: SVM = SVM::new(x.as_ref().unwrap().clone(), y.clone());
+        let mut model: SVM = SVM::new();
 
         // Fit the model
-        assert!(model.fit(10000, 0.01).is_ok());
+        assert!(model.fit(&x, &y, 10000, 0.01).is_ok());
 
         // Compute the accuracy
-        let accuracy: f64 = model.accuracy(&x.unwrap(), &y).unwrap();
+        let accuracy: f64 = model.accuracy(&x, &y).unwrap();
 
         // Print out the accuracy for debugging
         println!("Accuracy: {:?}", accuracy);
@@ -1031,11 +1034,20 @@ mod tests {
     #[test]
     fn test_linear_layer_new() {
         // Create a linear layer
-        let linear_layer: LinearLayer = LinearLayer::new(Series::new("weights", [1.0, 2.0, 3.0]),Series::new("biases", [1.0, 2.0, 3.0])); 
+        let linear_layer: LinearLayer = LinearLayer::new(
+            Series::new("weights", [1.0, 2.0, 3.0]),
+            Series::new("biases", [1.0, 2.0, 3.0]),
+        );
 
         // Check if the linear layer is created correctly
-        assert_eq!(linear_layer.weights, Series::new("weights", vec![1.0, 2.0, 3.0]));
-        assert_eq!(linear_layer.biases, Series::new("biases", vec![1.0, 2.0, 3.0]));
+        assert_eq!(
+            linear_layer.weights,
+            Series::new("weights", vec![1.0, 2.0, 3.0])
+        );
+        assert_eq!(
+            linear_layer.biases,
+            Series::new("biases", vec![1.0, 2.0, 3.0])
+        );
     }
 
     #[test]
@@ -1044,8 +1056,14 @@ mod tests {
         let linear_layer: LinearLayer = LinearLayer::zeroes(3);
 
         // Check if the linear layer is created correctly
-        assert_eq!(linear_layer.weights, Series::new("weights", vec![0.0, 0.0, 0.0]));
-        assert_eq!(linear_layer.biases, Series::new("biases", vec![0.0, 0.0, 0.0]));
+        assert_eq!(
+            linear_layer.weights,
+            Series::new("weights", vec![0.0, 0.0, 0.0])
+        );
+        assert_eq!(
+            linear_layer.biases,
+            Series::new("biases", vec![0.0, 0.0, 0.0])
+        );
     }
 
     #[test]
@@ -1083,9 +1101,18 @@ mod tests {
             Series::new(
                 "activated_values",
                 &[
-                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(0).unwrap()),
-                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(1).unwrap()),
-                    sigmoid((&input * &weights).sum::<f64>().unwrap() + &biases.f64().unwrap().get(2).unwrap())
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(0).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(1).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(2).unwrap()
+                    )
                 ]
             )
         );

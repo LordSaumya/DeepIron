@@ -1,6 +1,6 @@
 use crate::data_loader::DataFrameTransformer;
-use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
+use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::*;
 use polars::prelude::*;
 use polars::series::Series;
@@ -12,17 +12,14 @@ use polars::series::Series;
 /// ```
 /// let model = Model::Logistic::new();
 ///
-/// model.fit(num_epochs, learning_rate);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
 /// ```
 pub struct Logistic {
     // Fields for training
-    pub x: DataFrame,
-    pub y: Series,
     pub loss_function: LossFunctionType,
-    pub activation_function: ActivationFunctionType,
 
     // Fields to store results
     pub intercept: f64,
@@ -37,41 +34,42 @@ impl Logistic {
     /// ```
     /// let model = Model::Logistic::new();
     /// ```
-    pub fn new(x: DataFrame, y: Series) -> Logistic {
-        let x_width = x.width();
+    pub fn new() -> Logistic {
         Logistic {
-            x: x,
-            y: y,
             loss_function: LossFunctionType::BinaryCrossEntropy,
-            activation_function: ActivationFunctionType::Sigmoid,
             intercept: 0.0,
-            coefficients: vec![0.0; x_width],
+            coefficients: Vec::new(),
         }
     }
 
-    pub fn round_predictions(predictions: &Series) -> Series {
-        let mut rounded_predictions: Vec<f64> = Vec::with_capacity(predictions.len());
+    pub fn classify(predictions: &Series, threshold: f64) -> Series {
+        let mut classified_preds: Vec<f64> = Vec::with_capacity(predictions.len());
 
         for prediction in predictions.f64().unwrap().into_iter() {
             let prediction: f64 = prediction.unwrap();
-            if prediction > 0.5 {
-                rounded_predictions.push(1.0);
+            if prediction > threshold {
+                classified_preds.push(1.0);
             } else {
-                rounded_predictions.push(0.0);
+                classified_preds.push(0.0);
             }
         }
 
-        Series::new("prediction", rounded_predictions)
+        Series::new("prediction", classified_preds)
     }
 
-    fn compute_gradients(&self, predictions: &Series) -> (f64, Vec<f64>) {
+    fn compute_gradients(
+        &self,
+        x: &DataFrame,
+        y: &Series,
+        predictions: &Series,
+    ) -> (f64, Vec<f64>) {
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
-        let intercept_gradient: f64 = self.loss_function.intercept_gradient(&self.y, predictions);
+        let intercept_gradient: f64 = self.loss_function.intercept_gradient(y, predictions);
 
         for (_i, _) in self.coefficients.iter().enumerate() {
             let gradient: f64 = self
                 .loss_function
-                .gradient(&self.x, &self.y, predictions)
+                .gradient(x, y, predictions)
                 .mean()
                 .unwrap();
             gradients.push(gradient);
@@ -82,17 +80,28 @@ impl Logistic {
 }
 
 impl model::Modeller for Logistic {
-    fn fit(&mut self, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
+    fn fit(
+        &mut self,
+        x: &DataFrame,
+        y: &Series,
+        num_epochs: u32,
+        learning_rate: f64,
+    ) -> Result<(), PolarsError> {
         // Check if data are valid
-        if self.x.shape().0 != self.y.len() {
+        if x.shape().0 != y.len() {
             return Err(PolarsError::ShapeMismatch(
                 "Shape mismatch between X and y".into(),
             ));
         }
 
+        // Initialise coefficients
+        for _ in 0..x.width() {
+            self.coefficients.push(0.0);
+        }
+
         for _ in 0..num_epochs {
-            let predictions: Series = self.predict(&self.x)?;
-            let gradients: (f64, Vec<f64>) = self.compute_gradients(&predictions);
+            let predictions: Series = self.predict(x)?;
+            let gradients: (f64, Vec<f64>) = self.compute_gradients(x, y, &predictions);
 
             self.intercept -= learning_rate * gradients.0;
 
@@ -112,13 +121,13 @@ impl model::Modeller for Logistic {
             predictions = feature_values * *coef + predictions;
         }
 
-        // Apply and return the provided activation function
-        Ok(self.activation_function.activate(&predictions))
+        // Apply and return the sigmoid activated values
+        Ok(ActivationFunctionType::Sigmoid.activate(&predictions))
     }
 
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
-        let y_pred_rounded: Series = Logistic::round_predictions(&y_pred);
+        let y_pred_rounded: Series = Logistic::classify(&y_pred, 0.5);
         let correct_predictions: Series = y_pred_rounded.equal(y).unwrap().into_series();
         let num_correct_predictions: f64 = correct_predictions.sum().unwrap();
         let accuracy: f64 = num_correct_predictions / y_pred_rounded.len() as f64;
