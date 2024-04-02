@@ -1,6 +1,6 @@
 use crate::data_loader::DataFrameTransformer;
-use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
+use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::*;
 use polars::prelude::*;
 use polars::series::Series;
@@ -12,7 +12,7 @@ use polars::series::Series;
 /// ```
 /// let model = Model::Logistic::new();
 ///
-/// model.fit(num_epochs, learning_rate);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -54,10 +54,15 @@ impl Logistic {
             }
         }
 
-        Series::new("classified predictions", classified_preds)
+        Series::new("prediction", classified_preds)
     }
 
-    fn compute_gradients(&self, x: &DataFrame, y: &Series, predictions: &Series) -> (f64, Vec<f64>) {
+    fn compute_gradients(
+        &self,
+        x: &DataFrame,
+        y: &Series,
+        predictions: &Series,
+    ) -> (f64, Vec<f64>) {
         let mut gradients: Vec<f64> = Vec::with_capacity(self.coefficients.len());
         let intercept_gradient: f64 = self.loss_function.intercept_gradient(y, predictions);
 
@@ -75,12 +80,23 @@ impl Logistic {
 }
 
 impl model::Modeller for Logistic {
-    fn fit(&mut self, x: &DataFrame, y: &Series, num_epochs: u32, learning_rate: f64) -> Result<(), PolarsError> {
+    fn fit(
+        &mut self,
+        x: &DataFrame,
+        y: &Series,
+        num_epochs: u32,
+        learning_rate: f64,
+    ) -> Result<(), PolarsError> {
         // Check if data are valid
         if x.shape().0 != y.len() {
             return Err(PolarsError::ShapeMismatch(
                 "Shape mismatch between X and y".into(),
             ));
+        }
+
+        // Initialise coefficients
+        for _ in 0..x.width() {
+            self.coefficients.push(0.0);
         }
 
         for _ in 0..num_epochs {
@@ -105,6 +121,7 @@ impl model::Modeller for Logistic {
             predictions = feature_values * *coef + predictions;
         }
 
+        // Apply and return the sigmoid activated values
         Ok(ActivationFunctionType::Sigmoid.activate(&predictions))
     }
 

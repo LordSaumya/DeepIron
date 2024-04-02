@@ -19,9 +19,9 @@ pub mod model {
         /// Fit the model to the training data.
         ///
         /// # Arguments
-        /// 
+        ///
         /// * `x` - The features to train the model on.
-        /// 
+        ///
         /// * `y` - The target values to train the model on.
         ///
         /// * `num_epochs` - The number of epochs to train for.
@@ -200,23 +200,23 @@ pub mod loss_functions {
         fn gradient(&self, x: &DataFrame, y: &Series, y_pred: &Series) -> Series;
 
         /// Compute the gradient of the loss function for the intercept (does not take into account individual features values).
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `y` - The actual values.
-        /// 
+        ///
         /// * `y_pred` - The predicted values.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `f64` - The gradient.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradient = lossFn.intercept_gradient(&y, &y_pred);
-        /// 
+        ///
         /// ```
         fn intercept_gradient(&self, y: &Series, y_pred: &Series) -> f64;
     }
@@ -450,21 +450,21 @@ pub mod activation_functions {
         fn activate(&self, values: &Series) -> Series;
 
         ///Compute the gradient of the activation function.
-        /// 
+        ///
         /// # Arguments
-        /// 
+        ///
         /// * `values` - The values to activate.
-        /// 
+        ///
         /// # Returns
-        /// 
+        ///
         /// * `Series` - The gradients.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// 
+        ///
         /// let gradients = activation.gradient(&values);
-        /// 
+        ///
         /// ```
         fn gradient(&self, values: &Series) -> Series;
     }
