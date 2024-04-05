@@ -84,7 +84,7 @@ impl DataFrameTransformer for DataFrame {
         Ok(df)
     }
 
-    /// Split the DataFrame into two DataFrames.
+    /// Split the DataFrame into training and testing DataFrames.
     ///
     /// # Arguments
     ///
@@ -104,7 +104,6 @@ impl DataFrameTransformer for DataFrame {
         let train_num_rows: i64 = (num_rows as f64 * train_size) as i64;
         let train: DataFrame = self.slice(0, train_num_rows as usize);
         let test: DataFrame = self.slice(train_num_rows, num_rows);
-
         Ok((train, test))
     }
 
