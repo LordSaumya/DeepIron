@@ -187,7 +187,7 @@ impl MLP {
     ///
     /// let y_pred = model.forward(&x);
     ///
-    /// let gradients = model.backward(&x, &y, &y_pred);
+    /// let gradients = model.backward(&x, &y_pred, &y)
     /// ```
     ///
     /// # Arguments
@@ -195,6 +195,8 @@ impl MLP {
     /// * `inputs` - A series of inputs to the MLP.
     ///
     /// * `outputs` - A series of outputs from the MLP.
+    /// 
+    /// * `true_values` - A series of true values to compare the outputs to.
     ///
     /// # Returns
     ///

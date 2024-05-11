@@ -639,7 +639,7 @@ pub mod kernel_functions {
                     Series::new("kernel", kernel)
                 }
                 KernelFunctionType::Polynomial(a, b) => {
-                    // kernel = (x * y + 1)^2
+                    // kernel = (x * y + a)^b
                     let mut kernel: Vec<f64> = Vec::with_capacity(x.len());
                     for (x_i, y_i) in x
                         .f64()
