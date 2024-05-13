@@ -13,7 +13,7 @@ use polars::series::Series;
 /// ```
 /// let model = Model::SVM::new();
 ///
-/// model.fit(num_epochs, learning_rate);
+/// model.fit(&x, &y, num_epochs, learning_rate);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -47,6 +47,26 @@ impl SVM {
         }
     }
 
+    /// Compute the gradients for the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - The Series of input data.
+    /// 
+    /// * `y` - The Series of true values.
+    /// 
+    /// * `predictions` - The Series of predictions.
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple containing the bias gradient and the weight gradients.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let (bias_gradient, weight_gradients) = model.compute_gradients(&x, &y, &predictions);
+    /// 
+    /// ```
     fn compute_gradients(
         &self,
         x: &DataFrame,
@@ -124,6 +144,24 @@ impl model::Modeller for SVM {
         Ok(())
     }
 
+
+    /// Predict the output of the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - The DataFrame of input data.
+    /// 
+    /// # Returns
+    /// 
+    /// The Series of predictions.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let predictions = model.predict(&x);
+    /// 
+    /// ```
     fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError> {
         let mut predictions: Series = Series::new("prediction", vec![self.intercept; x.height()]);
 
