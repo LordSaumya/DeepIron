@@ -1,3 +1,7 @@
+//! # DeepIron
+//! `DeepIron` is a simple and extensible machine learning library written in Rust.
+//! The goal of this library is to understand the fundamentals of machine learning by implementing them from scratch.
+//! As such, the library is basic, unoptimised, and not suitable for production use. 
 pub mod data_loader;
 pub mod layers;
 pub mod linear_regression;
@@ -9,10 +13,6 @@ pub mod support_vector_machine;
 #[cfg(test)]
 mod tests {
     use crate::layers::layer::LinearLayer;
-    use crate::model::activation_functions;
-
-    use self::model::loss_functions;
-
     use super::*;
     use data_loader::*;
     use layers::layer::Layer;
@@ -1143,4 +1143,106 @@ mod tests {
     //         loss_function.gradient(&input.clone().into_frame(), &output.clone(), &output.clone()),
     //     );
     // }
+
+    #[test]
+    fn test_mlp_forward_1_layer() {
+        // Parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights.clone(), biases.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        assert_eq!(
+            output,
+            Series::new(
+                "activated_values",
+                &[
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(0).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(1).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(2).unwrap()
+                    )
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_mlp_forward_2_layers() {
+        // Parameters
+        let weights_1: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases_1: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let weights_2: Series = Series::new("weights", vec![7.0, 8.0, 9.0]);
+        let biases_2: Series = Series::new("biases", vec![10.0, 11.0, 12.0]);
+
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![13.0, 14.0, 15.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights_1.clone(), biases_1.clone()), activation_function.clone());
+        mlp = mlp.add_layer(LinearLayer::new(weights_2.clone(), biases_2.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        // Compute true values
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        // Compare the output
+        assert_eq!(
+            output,
+            Series::new("activated_values", &true_values)
+        );
+    }
 }
