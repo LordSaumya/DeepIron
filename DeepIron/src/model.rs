@@ -20,9 +20,9 @@ pub mod model {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features to train the model on.
+        /// * `x` - The Dataframe containing the features for training.
         ///
-        /// * `y` - The target values to train the model on.
+        /// * `y` - The Series of expected target values for training.
         ///
         /// * `num_epochs` - The number of epochs to train for.
         ///
@@ -52,7 +52,7 @@ pub mod model {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features to predict the target values for.
+        /// * `x` - The DataFrame containing the features to predict for.
         ///
         /// # Returns
         ///
@@ -73,7 +73,7 @@ pub mod model {
         ///
         /// * `x` - The features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The true values.
         ///
         /// # Returns
         ///
@@ -94,7 +94,7 @@ pub mod model {
         ///
         /// * `x` - The features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The true values.
         ///
         /// # Returns
         ///
@@ -123,7 +123,7 @@ pub mod loss_functions {
     use polars::prelude::*;
     use polars::{frame::DataFrame, series::Series};
 
-    /// Enum of supported loss functions.
+    /// Supported loss functions.
     #[derive(Clone)]
     pub enum LossFunctionType {
         /// Mean squared error loss function.
@@ -153,13 +153,13 @@ pub mod loss_functions {
     /// let loss = loss_functions::MeanSquaredError;
     /// ```
     pub trait LossFunction {
-        /// Compute the loss between the predicted and actual values.
+        /// Compute the loss between the predicted and true values.
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -179,15 +179,15 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features.
+        /// * `x` - The DataFrame of features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The gradient.
+        /// * `Series` - The gradients.
         ///
         /// # Example
         ///
@@ -203,9 +203,9 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -222,13 +222,13 @@ pub mod loss_functions {
     }
 
     impl LossFunction for LossFunctionType {
-        /// Compute the loss between the predicted and actual values.
+        /// Compute the loss between the predicted and true values.
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -277,11 +277,11 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features.
+        /// * `x` - The DataFrame of features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -341,9 +341,9 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -434,11 +434,11 @@ pub mod activation_functions {
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the activation for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The activated values.
+        /// * `Series` - The Series of activation values.
         ///
         /// # Example
         ///
@@ -449,15 +449,15 @@ pub mod activation_functions {
         /// ```
         fn activate(&self, values: &Series) -> Series;
 
-        ///Compute the gradient of the activation function.
+        /// Compute the gradient of the activation function.
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the gradient for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The gradients.
+        /// * `Series` - The Series of gradients.
         ///
         /// # Example
         ///
@@ -474,11 +474,11 @@ pub mod activation_functions {
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the activation for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The activated values.
+        /// * `Series` - The Series of activation values.
         ///
         /// # Example
         ///
@@ -515,9 +515,27 @@ pub mod activation_functions {
             }
         }
 
+        /// Compute the gradient of the activation function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `values` - The Series of values to compute the gradient for.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The Series of gradients.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let gradients = activation.gradient(&values);
+        /// 
+        /// ```
         fn gradient(&self, values: &Series) -> Series {
             match self {
                 ActivationFunctionType::Identity => {
+                    // identity'(x) = 1
                     Series::new("gradients", vec![1.0; values.len()])
                 }
                 ActivationFunctionType::Sigmoid => {
@@ -579,13 +597,13 @@ pub mod kernel_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The first set of values.
+        /// * `x` - The first Series of values.
         ///
-        /// * `y` - The second set of values.
+        /// * `y` - The second Series of values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The kernel.
+        /// * `Series` - The kernel values.
         ///
         /// # Example
         ///
@@ -603,13 +621,13 @@ pub mod kernel_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The first set of values.
+        /// * `x` - The first Series of values.
         ///
-        /// * `y` - The second set of values.
+        /// * `y` - The second Series of values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The kernel.
+        /// * `Series` - The kernel values.
         ///
         /// # Example
         ///
