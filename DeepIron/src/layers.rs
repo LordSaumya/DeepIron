@@ -1,3 +1,5 @@
+//! A set of structs and functions that define a layer in a neural network.
+
 /// A set of structs and functions that define a layer in a neural network.
 ///
 /// # Example
@@ -76,7 +78,7 @@ pub mod layer {
     /// # Example
     ///
     /// ```
-    /// let linear_layer = LinearLayer::new(vec![1.0, 2.0, 3.0], vec![1.0, 2.0, 3.0]);
+    /// let linear_layer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
     /// ```
     #[derive(Clone)]
     pub struct LinearLayer {
@@ -90,14 +92,14 @@ pub mod layer {
         /// # Example
         ///
         /// ```
-        /// let layer = LinearLayer::new(vec![1.0, 2.0, 3.0], vec![1.0, 2.0, 3.0]);
+        /// let layer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
         /// ```
         ///
         /// # Arguments
         ///
-        /// * `weights` - A series of weights for the layer.
+        /// * `weights` - A Series of weights for the layer.
         ///
-        /// * `biases` - A series of biases for the layer.
+        /// * `biases` - A Series of biases for the layer.
         ///
         /// # Returns
         ///
@@ -180,6 +182,26 @@ pub mod layer {
             activation_function.activate(&(dot_prod_series + self.biases.clone()))
         }
 
+        /// # WARNING: This function is not yet implemented.
+        /// Performs a backward pass on the layer using the given loss function, calculating the gradients of the weights and biases for each layer.
+        /// 
+        /// 
+        /// # Arguments
+        /// 
+        /// 
+        /// * `inputs` - A series of inputs to the layer.
+        /// 
+        /// * `outputs` - A series of outputs from the layer.
+        /// 
+        /// * `loss_function` - The loss function to use for the layer.
+        /// 
+        /// * `activation_function` - The activation function to use for the layer.
+        /// 
+        /// * `upstream_gradient` - The gradients from the subsequent layer.
+        /// 
+        /// # Returns
+        /// 
+        /// A tuple of three series of gradients, corresponding to the gradients of the weights, biases, and inputs, respectively.
         fn backward(
             &self,
             inputs: Series,                              // X
@@ -188,17 +210,18 @@ pub mod layer {
             activation_function: ActivationFunctionType, // A
             upstream_gradients: Series,                  // dL/dZ
         ) -> (Series, Series, Series) {
-            let activation_gradients: Series = activation_function.gradient(&outputs); // dA/dZ
-            let weighted_gradients: Series = &activation_gradients * &upstream_gradients; // dL/dZ * dA/dZ
-            let weight_gradients: Series = &inputs * &weighted_gradients; // dW/dX = X * dL/dZ * dA/dZ
-            let bias_gradients: Series = weighted_gradients; // dB/dX = dL/dZ * dA/dZ
-            let input_gradients: Series = loss_function.gradient(&inputs.into_frame(), 
-                &outputs, &upstream_gradients); // dL/dX = dL/dZ * dA/dZ * dZ/dX
-            (
-                weight_gradients, // dW/dX
-                bias_gradients,   // dB/dZ
-                input_gradients,  // dL/dX
-            )
+            // let activation_gradients: Series = activation_function.gradient(&outputs); // dA/dZ
+            // let weighted_gradients: Series = &activation_gradients * &upstream_gradients; // dL/dZ * dA/dZ
+            // let weight_gradients: Series = &inputs * &weighted_gradients; // dW/dX = X * dL/dZ * dA/dZ
+            // let bias_gradients: Series = weighted_gradients; // dB/dX = dL/dZ * dA/dZ
+            // let input_gradients: Series = loss_function.gradient(&inputs.into_frame(), 
+            //     &outputs, &upstream_gradients); // dL/dX = dL/dZ * dA/dZ * dZ/dX
+            // (
+            //     weight_gradients, // dW/dX
+            //     bias_gradients,   // dB/dZ
+            //     input_gradients,  // dL/dX
+            // )
+            unimplemented!()
         }
     }
 }
