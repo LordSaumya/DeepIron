@@ -79,7 +79,7 @@ impl Linear {
     }
 }
 
-impl model::Modeller for Linear {
+impl model::SupervisedModeller for Linear {
 
     /// Fit the model to the data.
     /// 

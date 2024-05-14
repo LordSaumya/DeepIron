@@ -103,7 +103,7 @@ impl SVM {
     }
 }
 
-impl model::Modeller for SVM {
+impl model::SupervisedModeller for SVM {
     /// Fit the model to the data.
     ///
     /// # Example

@@ -16,8 +16,8 @@ pub mod model {
     use polars::prelude::*;
     use polars::series::Series;
 
-    /// A trait that defines a model's fit and predict functions.
-    pub trait Modeller {
+    /// A trait that defines a supervised learning model's fit and predict functions.
+    pub trait SupervisedModeller {
         /// Fit the model to the training data.
         ///
         /// # Arguments
@@ -111,7 +111,69 @@ pub mod model {
         /// ```
         fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
     }
+
+    /// A trait that defines a clustering model's fit, predict, and evaluation functions.
+    pub trait ClusterModeller {
+        /// Fit the model to the training data.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The Dataframe containing the features for training.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<(), PolarsError>` - A result indicating if the model was fit successfully.
+        ///
+        /// # Example
+        ///
+        /// ```no_run
+        /// let model = Model::KMeans::new(3);
+        ///
+        /// model.fit(&x);
+        ///
+        /// ```
+        fn fit(&mut self, x: &DataFrame, num_clusters: usize) -> Result<(), PolarsError>;
+
+        /// Predict the cluster assignments for the given features.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The DataFrame containing the features to predict for.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<Series, PolarsError>` - A result containing the predicted cluster assignments.
+        ///
+        /// # Example
+        ///
+        /// ```no_run
+        ///
+        /// let cluster_assignments = model.predict(&x);
+        ///
+        /// ```
+        fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
+
+        /// Computes the compactness of the clusters.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The DataFrame containing the features to evaluate the model on.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<f64, PolarsError>` - A result containing the compactness of the clusters.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// 
+        /// let compactness = model.compactness(&x);
+        /// 
+        /// ```
+        fn compactness(&self, x: &DataFrame) -> Result<f64, PolarsError>;
+    }
 }
+
 
 /// A set of loss functions for use in training models.
 ///

@@ -21,7 +21,7 @@ mod tests {
     use model::activation_functions::{ActivationFunction, ActivationFunctionType};
     use model::kernel_functions::{KernelFunction, KernelFunctionType};
     use model::loss_functions::{LossFunction, LossFunctionType};
-    use model::model::Modeller;
+    use model::model::SupervisedModeller;
     use multilayer_perceptron::*;
     use polars::prelude::*;
     use std::path::Path;
