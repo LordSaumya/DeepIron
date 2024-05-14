@@ -127,7 +127,7 @@ pub mod model {
         /// # Example
         ///
         /// ```no_run
-        /// let model = Model::KMeans::new(3);
+        /// let model = Model::KMeans::new_random(3, EndCondition::MaxIter(100));
         ///
         /// model.fit(&x);
         ///
