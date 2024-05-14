@@ -26,8 +26,8 @@ A basic machine learning library built in Rust.
 - [X] Activation Functions
     - [X] Sigmoid
     - [X] ReLU
-    - [ ] Softmax
-    - [ ] Leaky ReLU
+    - [X] Softmax
+    - [X] Leaky ReLU
 - [X] Kernel Functions
     - [X] Linear
     - [X] Polynomial
