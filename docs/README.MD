@@ -37,10 +37,13 @@ A basic machine learning library built in Rust.
 - [ ] Neural Networks
     - [X] MLP
         - [X] Forward Propagation
-        - [X] Backward Propagation
+        - [ ] Backward Propagation
     - [ ] Convolutional
         - [ ] Forward Propagation
         - [ ] Backward Propagation
+- [ ] Clustering
+    - [ ] K-Means Clustering
+    - [ ] Hierarchical Clustering
 
 **Future additions**
 - [ ] Decision Tree
