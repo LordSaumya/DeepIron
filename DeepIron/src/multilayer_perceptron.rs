@@ -237,7 +237,7 @@ impl MLP {
     }
 }
 
-impl model::Modeller for MLP {
+impl model::SupervisedModeller for MLP {
     /// Fit the model to the data.
     ///
     /// # Example

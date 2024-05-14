@@ -114,7 +114,7 @@ impl Logistic {
     }
 }
 
-impl model::Modeller for Logistic {
+impl model::SupervisedModeller for Logistic {
 
     /// Fit the model to the data.
     /// 
