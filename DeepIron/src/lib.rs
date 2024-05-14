@@ -1273,4 +1273,32 @@ mod tests {
         let residuals: Series = ActivationFunctionType::Softmax.gradient(&x) - true_softmax;
         assert!(residuals.f64().unwrap().max().unwrap().abs() < 0.001);
     }
+
+    #[test]
+    fn test_activation_function_lrelu() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu
+        let alpha: f64 = 0.1;
+        let lrelu: Series = ActivationFunctionType::LReLU(alpha).activate(&x);
+
+        // true lrelu values
+        let true_lrelu: Series = Series::new("activated_values", vec![-1.0 * alpha, 2.0, -3.0 * alpha]);
+
+        // Check if the lrelu is computed correctly
+        assert_eq!(lrelu, true_lrelu);
+    }
+
+    #[test]
+    fn test_activation_function_lrelu_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu gradient
+        let lrelu_gradient: Series = ActivationFunctionType::LReLU(0.1).gradient(&x);
+
+        // Check if the lrelu gradient is computed correctly
+        assert_eq!(lrelu_gradient, Series::new("gradients", vec![0.1, 1.0, 0.1]));
+    }
 }
