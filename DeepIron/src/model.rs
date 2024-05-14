@@ -1,3 +1,5 @@
+//! A set of submodules used to define a generic model.
+
 /// A set of structs and functions that define a generic model.
 ///
 /// # Example
