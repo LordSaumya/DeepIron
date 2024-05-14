@@ -1,3 +1,7 @@
+//! # DeepIron
+//! `DeepIron` is a simple and extensible machine learning library written in Rust.
+//! The goal of this library is to understand the fundamentals of machine learning by implementing them from scratch.
+//! As such, the library is basic, unoptimised, and not suitable for production use. 
 pub mod data_loader;
 pub mod layers;
 pub mod linear_regression;
@@ -9,10 +13,6 @@ pub mod support_vector_machine;
 #[cfg(test)]
 mod tests {
     use crate::layers::layer::LinearLayer;
-    use crate::model::activation_functions;
-
-    use self::model::loss_functions;
-
     use super::*;
     use data_loader::*;
     use layers::layer::Layer;
@@ -1143,4 +1143,162 @@ mod tests {
     //         loss_function.gradient(&input.clone().into_frame(), &output.clone(), &output.clone()),
     //     );
     // }
+
+    #[test]
+    fn test_mlp_forward_1_layer() {
+        // Parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights.clone(), biases.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        assert_eq!(
+            output,
+            Series::new(
+                "activated_values",
+                &[
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(0).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(1).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(2).unwrap()
+                    )
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_mlp_forward_2_layers() {
+        // Parameters
+        let weights_1: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases_1: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let weights_2: Series = Series::new("weights", vec![7.0, 8.0, 9.0]);
+        let biases_2: Series = Series::new("biases", vec![10.0, 11.0, 12.0]);
+
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![13.0, 14.0, 15.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights_1.clone(), biases_1.clone()), activation_function.clone());
+        mlp = mlp.add_layer(LinearLayer::new(weights_2.clone(), biases_2.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        // Compute true values
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        // Compare the output
+        assert_eq!(
+            output,
+            Series::new("activated_values", &true_values)
+        );
+    }
+
+    #[test]
+    fn test_activation_function_softmax() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+
+        // Compute true softmax values
+        let softmax = |x: f64| -> f64 { return f64::exp(x) / (f64::exp(1.0) + f64::exp(2.0) + f64::exp(3.0)) };
+
+        // Compute softmax values
+        let softmax_values: Series = Series::new("activated_values", vec![softmax(1.0), softmax(2.0), softmax(3.0)]);
+
+        // Check if the softmax is computed correctly
+        assert_eq!(ActivationFunctionType::Softmax.activate(&x), softmax_values);
+    }
+
+    #[test]
+    fn test_activation_function_softmax_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+    
+        // True softmax gradient values
+        let true_softmax: Series = Series::new("gradients", vec![0.081925, -0.022033, -0.059892, -0.022033, 0.184836, -0.162803, -0.059892, -0.162803, 0.222695]);
+        
+        // Check if the softmax gradient matches within 0.001
+        let residuals: Series = ActivationFunctionType::Softmax.gradient(&x) - true_softmax;
+        assert!(residuals.f64().unwrap().max().unwrap().abs() < 0.001);
+    }
+
+    #[test]
+    fn test_activation_function_lrelu() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu
+        let alpha: f64 = 0.1;
+        let lrelu: Series = ActivationFunctionType::LReLU(alpha).activate(&x);
+
+        // true lrelu values
+        let true_lrelu: Series = Series::new("activated_values", vec![-1.0 * alpha, 2.0, -3.0 * alpha]);
+
+        // Check if the lrelu is computed correctly
+        assert_eq!(lrelu, true_lrelu);
+    }
+
+    #[test]
+    fn test_activation_function_lrelu_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu gradient
+        let lrelu_gradient: Series = ActivationFunctionType::LReLU(0.1).gradient(&x);
+
+        // Check if the lrelu gradient is computed correctly
+        assert_eq!(lrelu_gradient, Series::new("gradients", vec![0.1, 1.0, 0.1]));
+    }
 }

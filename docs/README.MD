@@ -26,7 +26,8 @@ A basic machine learning library built in Rust.
 - [X] Activation Functions
     - [X] Sigmoid
     - [X] ReLU
-    - [ ] Softmax
+    - [X] Softmax
+    - [X] Leaky ReLU
 - [X] Kernel Functions
     - [X] Linear
     - [X] Polynomial
@@ -37,10 +38,13 @@ A basic machine learning library built in Rust.
 - [ ] Neural Networks
     - [X] MLP
         - [X] Forward Propagation
-        - [X] Backward Propagation
+        - [ ] Backward Propagation
     - [ ] Convolutional
         - [ ] Forward Propagation
         - [ ] Backward Propagation
+- [ ] Clustering
+    - [ ] K-Means Clustering
+    - [ ] Hierarchical Clustering
 
 **Future additions**
 - [ ] Decision Tree

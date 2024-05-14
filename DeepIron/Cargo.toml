@@ -1,6 +1,6 @@
 [package]
 name = "DeepIron"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 keywords = ["rust", "machine_learning", "deep_learning", "data_science"]
 categories = ["science"]
@@ -8,6 +8,7 @@ authors = ["LordSaumya"]
 license = "MIT"
 repository = "https://github.com/LordSaumya/DeepIron"
 description = "A simple Rust library for machine learning and deep learning."
+readme = "README.md"
 
 [dependencies]
 polars = "0.35.4"

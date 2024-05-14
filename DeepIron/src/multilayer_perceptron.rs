@@ -1,3 +1,4 @@
+//! A module encapsulating the structures and methods for building a multilayer perceptron.
 use crate::data_loader::DataFrameTransformer;
 use crate::layers::layer::{Layer, LinearLayer};
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
@@ -12,17 +13,19 @@ use polars::series::Series;
 /// # Example
 ///
 /// ```
-/// let model = Model::MLP::new();
+/// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
 ///
-/// model.fit(num_epochs, learning_rate);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
 /// ```
 pub struct MLP {
-    // Fields for training
+    /// The loss function to use for the MLP.
     pub loss_function: LossFunctionType,
+    /// The activation functions to use for the MLP.
     pub activation_functions: Vec<ActivationFunctionType>,
+    /// The layers to use for the MLP.
     pub layers: Vec<LinearLayer>,
 }
 
@@ -32,7 +35,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new();
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// ```
     pub fn new(loss_function: LossFunctionType) -> MLP {
         MLP {
@@ -66,6 +69,7 @@ impl MLP {
         layers: Vec<LinearLayer>,
         activation_functions: Vec<ActivationFunctionType>,
     ) -> MLP {
+        assert_eq!(layers.len(), activation_functions.len());
         MLP {
             loss_function,
             activation_functions,
@@ -78,7 +82,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new();
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// let layer = LinearLayer::new_random(32, [-1, 1]);
     ///
     /// let new_model = model.add_layer(layer, ActivationFunctionType::ReLU);
@@ -116,7 +120,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new();
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let new_model = model.set_layer(0, layer, ActivationFunctionType::ReLU);
     ///
@@ -139,7 +143,10 @@ impl MLP {
         layer: LinearLayer,
         activation_function: ActivationFunctionType,
     ) -> MLP {
-        assert!((0..self.layers.len()).contains(&i), "Index out of bounds.");
+
+        if i >= self.layers.len() {
+            panic!("Index out of bounds");
+        }
 
         let mut new_layers: Vec<LinearLayer> = self.layers.clone();
         let mut new_activation_functions: Vec<ActivationFunctionType> =
@@ -158,18 +165,18 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new();
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let y_pred = model.forward(&x);
     /// ```
     ///
     /// # Arguments
     ///
-    /// * `inputs` - A series of inputs to the MLP.
+    /// * `inputs` - A Series of inputs to the MLP.
     ///
     /// # Returns
     ///
-    /// A series of outputs from the MLP.
+    /// A Series of outputs from the MLP.
     pub fn forward(&self, inputs: Series) -> Series {
         let mut outputs: Series = inputs.clone();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -178,51 +185,55 @@ impl MLP {
         outputs
     }
 
+    /// # WARNING: This method is not yet implemented.
     /// Perform backward propagation on the MLP with the given inputs and outputs.
     ///
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new();
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let y_pred = model.forward(&x);
     ///
-    /// let gradients = model.backward(&x, &y, &y_pred);
+    /// let gradients = model.backward(&x, &y_pred, &y)
     /// ```
     ///
     /// # Arguments
     ///
-    /// * `inputs` - A series of inputs to the MLP.
+    /// * `inputs` - A Series of inputs to the MLP.
     ///
-    /// * `outputs` - A series of outputs from the MLP.
+    /// * `outputs` - A Series of outputs from the MLP.
+    /// 
+    /// * `true_values` - A Series of true values to compare the outputs to.
     ///
     /// # Returns
     ///
-    /// A tuple of two vectors, each with a series of gradients for the weights and biases, respectively.
+    /// A tuple of two vectors, each with a Series of gradients for the weights and biases, respectively.
     pub fn backward(
         &self,
         inputs: &Series,
         outputs: &Series,
         true_values: &Series,
     ) -> (Vec<Series>, Vec<Series>) {
-        let mut upstream_gradient: Series =
-            self.loss_function
-                .gradient(&(inputs.clone().into_frame()), &true_values, &outputs);
-        let mut gradients: Vec<Series> = Vec::new();
-        let mut biases: Vec<Series> = Vec::new();
-        for (i, layer) in self.layers.iter().enumerate().rev() {
-            let (weight_gradients, bias_gradients, input_gradients) = layer.backward(
-                inputs.clone(),
-                outputs.clone(),
-                self.loss_function.clone(),
-                self.activation_functions[i].clone(),
-                upstream_gradient,
-            );
-            upstream_gradient = input_gradients;
-            gradients.push(weight_gradients);
-            biases.push(bias_gradients);
-        }
-        (gradients, biases)
+        // let mut upstream_gradient: Series =
+        //     self.loss_function
+        //         .gradient(&(inputs.clone().into_frame()), &true_values, &outputs);
+        // let mut gradients: Vec<Series> = Vec::new();
+        // let mut biases: Vec<Series> = Vec::new();
+        // for (i, layer) in self.layers.iter().enumerate().rev() {
+        //     let (weight_gradients, bias_gradients, input_gradients) = layer.backward(
+        //         inputs.clone(),
+        //         outputs.clone(),
+        //         self.loss_function.clone(),
+        //         self.activation_functions[i].clone(),
+        //         upstream_gradient,
+        //     );
+        //     upstream_gradient = input_gradients;
+        //     gradients.push(weight_gradients);
+        //     biases.push(bias_gradients);
+        // }
+        // (gradients, biases)
+        unimplemented!()
     }
 }
 
@@ -233,9 +244,9 @@ impl model::Modeller for MLP {
     ///
     /// ```
     ///
-    /// let model = MLP::new();
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
     ///
-    /// model.fit(num_epochs, learning_rate);
+    /// model.fit(&x, &y, 100, 0.01);
     ///
     /// ```
     fn fit(
@@ -260,6 +271,15 @@ impl model::Modeller for MLP {
         Ok(())
     }
 
+    /// Predict the output of the model given the input.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// 
     fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError> {
         let mut outputs: Series = x.get_col_by_index(0).unwrap();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -268,11 +288,33 @@ impl model::Modeller for MLP {
         Ok(outputs)
     }
 
+    /// Calculate the loss of the model given the input and output.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// let loss = model.loss(&x, &y);
+    /// 
+    /// ```
     fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         Ok(self.loss_function.loss(&y_pred, y))
     }
 
+    /// Calculate the accuracy of the model given the input and output.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// let accuracy = model.accuracy(&x, &y);
+    /// 
+    /// ```
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         let accuracy: f64 = y_pred.equal(y).unwrap().sum().unwrap() as f64 / y_pred.len() as f64;

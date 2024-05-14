@@ -1,3 +1,5 @@
+//! A module for loading and transforming data into a Polars DataFrame.
+
 use polars::frame::DataFrame;
 use polars::prelude::*;
 use polars::series::Series;
@@ -84,7 +86,7 @@ impl DataFrameTransformer for DataFrame {
         Ok(df)
     }
 
-    /// Split the DataFrame into two DataFrames.
+    /// Split the DataFrame into training and testing DataFrames.
     ///
     /// # Arguments
     ///
@@ -104,7 +106,6 @@ impl DataFrameTransformer for DataFrame {
         let train_num_rows: i64 = (num_rows as f64 * train_size) as i64;
         let train: DataFrame = self.slice(0, train_num_rows as usize);
         let test: DataFrame = self.slice(train_num_rows, num_rows);
-
         Ok((train, test))
     }
 
@@ -221,7 +222,7 @@ pub mod data_loader_util {
     }
 }
 
-/// A set of functions that return commonly-used series -> series functions for data transformations.
+/// A set of functions that return commonly-used series-to-series functions for data transformations.
 ///
 ///
 /// # Example
@@ -248,15 +249,15 @@ pub mod transformer_functions {
         move |series: &Series| series.clone()
     }
 
-    /// Return a function that returns the power of a Series.
+    /// Return a function that returns a Series with all values raised to the provided power.
     ///
     /// # Arguments
     ///
-    /// * `power` - The power to raise the Series to.
+    /// * `power` - The exponent to raise the values to.
     ///
     /// # Returns
     ///
-    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
+    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns the transformed Series.
     pub fn power(power: f64) -> impl Fn(&Series) -> Series {
         return move |series: &Series| {
             let s_power: Series = series
@@ -268,7 +269,7 @@ pub mod transformer_functions {
         };
     }
 
-    /// Return a function that returns the log of a Series.
+    /// Return a function that returns a Series with the logarithm of all values with the provided base.
     ///
     /// # Arguments
     ///
@@ -276,7 +277,7 @@ pub mod transformer_functions {
     ///
     /// # Returns
     ///
-    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
+    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns the transformed Series.
     pub fn log(base: f64) -> impl Fn(&Series) -> Series {
         return move |series: &Series| {
             let s_log: Series = series

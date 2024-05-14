@@ -1,3 +1,5 @@
+//! A set of structs and functions for linear regression.
+
 use crate::data_loader::DataFrameTransformer;
 use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::*;
@@ -41,6 +43,20 @@ impl Linear {
         }
     }
 
+    
+    /// Compute the gradients for the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// * `predictions` - A Series of predictions.
+    /// 
+    /// # Returns
+    /// 
+    /// * `(f64, Vec<f64>)` - A tuple of the intercept gradient and the feature gradients.
     fn compute_gradients(
         &self,
         x: &DataFrame,
@@ -64,6 +80,30 @@ impl Linear {
 }
 
 impl model::Modeller for Linear {
+
+    /// Fit the model to the data.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// * `num_epochs` - The number of epochs to train the model.
+    /// 
+    /// * `learning_rate` - The learning rate for the model.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<(), PolarsError>` - A result indicating success or failure.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let model = Model::Linear::new();
+    /// 
+    /// model.fit(&x, &y, 100, 0.01);
+    /// ```
     fn fit(
         &mut self,
         x: &DataFrame,
@@ -97,6 +137,21 @@ impl model::Modeller for Linear {
         Ok(())
     }
 
+    /// Predict the target values for the given features.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Series, PolarsError>` - A result containing the predicted target values.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let y_pred = model.predict(&x);
+    /// ```
     fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError> {
         let mut predictions: Series = Series::new("prediction", vec![self.intercept; x.height()]);
 
@@ -107,7 +162,26 @@ impl model::Modeller for Linear {
 
         Ok(predictions)
     }
-
+    
+    /// Calculate the accuracy of the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<f64, PolarsError>` - A result containing the accuracy of the model.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let accuracy = model.accuracy(&x, &y);
+    /// 
+    /// ```
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         // Calculate accuracy using r_squared
