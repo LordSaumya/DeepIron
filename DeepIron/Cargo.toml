@@ -8,6 +8,7 @@ authors = ["LordSaumya"]
 license = "MIT"
 repository = "https://github.com/LordSaumya/DeepIron"
 description = "A simple Rust library for machine learning and deep learning."
+readme = "README.md"
 
 [dependencies]
 polars = "0.35.4"
