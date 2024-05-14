@@ -1,3 +1,5 @@
+//! A set of structs and functions for support vector machines.
+
 use crate::data_loader::DataFrameTransformer;
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
 use crate::model::kernel_functions::{KernelFunction, KernelFunctionType};

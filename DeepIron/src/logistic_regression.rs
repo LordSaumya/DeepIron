@@ -1,3 +1,5 @@
+//! A set of structs and functions for logistic regression.
+
 use crate::data_loader::DataFrameTransformer;
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
 use crate::model::loss_functions::{LossFunction, LossFunctionType};

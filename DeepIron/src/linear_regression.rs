@@ -1,3 +1,5 @@
+//! A set of structs and functions for linear regression.
+
 use crate::data_loader::DataFrameTransformer;
 use crate::model::loss_functions::{LossFunction, LossFunctionType};
 use crate::model::*;

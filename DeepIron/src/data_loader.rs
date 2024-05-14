@@ -1,5 +1,5 @@
 //! A module for loading and transforming data into a Polars DataFrame.
-//! 
+
 use polars::frame::DataFrame;
 use polars::prelude::*;
 use polars::series::Series;
