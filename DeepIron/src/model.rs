@@ -409,6 +409,8 @@ pub mod activation_functions {
         Sigmoid,
         /// Rectified linear unit activation function.
         ReLU,
+        /// Softmax activation function.
+        Softmax,
     }
 
     /// Implement the Display trait for printing ActivationFunctionType.
@@ -418,6 +420,7 @@ pub mod activation_functions {
                 ActivationFunctionType::Identity => write!(f, "Identity"),
                 ActivationFunctionType::Sigmoid => write!(f, "Sigmoid"),
                 ActivationFunctionType::ReLU => write!(f, "ReLU"),
+                ActivationFunctionType::Softmax => write!(f, "Softmax"),
             }
         }
     }
@@ -514,6 +517,23 @@ pub mod activation_functions {
                         .rename("activated_values")
                         .clone()
                 }
+                ActivationFunctionType::Softmax => {
+                    // softmax(x) = e^x / sum(e^x)
+                    let activated_values: Series = values
+                    .f64()
+                    .unwrap()
+                    .apply(|value| Some(f64::exp(value.unwrap())))
+                    .into_series()
+                    .clone();
+                    let sum: f64 = activated_values.sum().unwrap();
+                    activated_values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(value.unwrap() / sum))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
+                }
             }
         }
 
@@ -557,6 +577,33 @@ pub mod activation_functions {
                         let value: f64 = value.unwrap();
                         gradients.push(if value > 0.0 { 1.0 } else { 0.0 });
                     }
+                    Series::new("gradients", gradients)
+                }
+                ActivationFunctionType::Softmax => {
+                    // Softmax gradient involves the Jacobian matrix of the softmax function
+                    let values: Vec<f64> = values.f64().unwrap().into_iter().map(|v| v.unwrap()).collect();
+                    let len: usize = values.len();
+                
+                    // Compute softmax probabilities
+                    let max_value: f64 = values.iter().cloned().fold(f64::NAN, f64::max);
+                    let exp_values: Vec<f64> = values.iter().map(|v| (v - max_value).exp()).collect();
+                    let sum_exp_values: f64 = exp_values.iter().sum();
+                    let softmax: Vec<f64> = exp_values.iter().map(|v| v / sum_exp_values).collect();
+                
+                    // Compute the Jacobian matrix of the softmax
+                    let mut jacobian: Vec<Vec<f64>> = vec![vec![0.0; len]; len];
+                    for i in 0..len {
+                        for j in 0..len {
+                            if i == j {
+                                jacobian[i][j] = softmax[i] * (1.0 - softmax[i]);
+                            } else {
+                                jacobian[i][j] = -softmax[i] * softmax[j];
+                            }
+                        }
+                    }
+                
+                    // Flatten the Jacobian matrix to a single vector
+                    let gradients: Vec<f64> = jacobian.into_iter().flat_map(|row| row.into_iter()).collect();
                     Series::new("gradients", gradients)
                 }
             }
