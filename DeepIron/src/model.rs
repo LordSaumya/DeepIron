@@ -411,6 +411,8 @@ pub mod activation_functions {
         ReLU,
         /// Softmax activation function.
         Softmax,
+        /// Leaky ReLU activation function.
+        LReLU(f64)
     }
 
     /// Implement the Display trait for printing ActivationFunctionType.
@@ -421,6 +423,7 @@ pub mod activation_functions {
                 ActivationFunctionType::Sigmoid => write!(f, "Sigmoid"),
                 ActivationFunctionType::ReLU => write!(f, "ReLU"),
                 ActivationFunctionType::Softmax => write!(f, "Softmax"),
+                ActivationFunctionType::LReLU(alpha) => write!(f, "Leaky ReLU (alpha = {})", alpha),
             }
         }
     }
@@ -534,6 +537,16 @@ pub mod activation_functions {
                         .rename("activated_values")
                         .clone()
                 }
+                ActivationFunctionType::LReLU(alpha) => {
+                    // Leaky ReLU(x) = x if x > 0 else alpha * x
+                    values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(if value.unwrap() > 0.0 { value.unwrap() } else { alpha * value.unwrap() }))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
+                }
             }
         }
 
@@ -604,6 +617,15 @@ pub mod activation_functions {
                 
                     // Flatten the Jacobian matrix to a single vector
                     let gradients: Vec<f64> = jacobian.into_iter().flat_map(|row| row.into_iter()).collect();
+                    Series::new("gradients", gradients)
+                }
+                ActivationFunctionType::LReLU(alpha) => {
+                    // Leaky ReLU'(x) = 1 if x > 0 else alpha
+                    let mut gradients: Vec<f64> = Vec::with_capacity(values.len());
+                    for value in values.f64().unwrap().into_iter() {
+                        let value: f64 = value.unwrap();
+                        gradients.push(if value > 0.0 { 1.0 } else { *alpha });
+                    }
                     Series::new("gradients", gradients)
                 }
             }
