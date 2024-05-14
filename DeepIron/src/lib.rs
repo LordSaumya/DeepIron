@@ -1245,4 +1245,32 @@ mod tests {
             Series::new("activated_values", &true_values)
         );
     }
+
+    #[test]
+    fn test_activation_function_softmax() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+
+        // Compute true softmax values
+        let softmax = |x: f64| -> f64 { return f64::exp(x) / (f64::exp(1.0) + f64::exp(2.0) + f64::exp(3.0)) };
+
+        // Compute softmax values
+        let softmax_values: Series = Series::new("activated_values", vec![softmax(1.0), softmax(2.0), softmax(3.0)]);
+
+        // Check if the softmax is computed correctly
+        assert_eq!(ActivationFunctionType::Softmax.activate(&x), softmax_values);
+    }
+
+    #[test]
+    fn test_activation_function_softmax_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+    
+        // True softmax gradient values
+        let true_softmax: Series = Series::new("gradients", vec![0.081925, -0.022033, -0.059892, -0.022033, 0.184836, -0.162803, -0.059892, -0.162803, 0.222695]);
+        
+        // Check if the softmax gradient matches within 0.001
+        let residuals: Series = ActivationFunctionType::Softmax.gradient(&x) - true_softmax;
+        assert!(residuals.f64().unwrap().max().unwrap().abs() < 0.001);
+    }
 }
