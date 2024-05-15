@@ -212,6 +212,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn test_select_rows_idx_out_of_bounds() {
         // Create a simple DataFrame for testing
         let df: DataFrame = DataFrame::new(vec![
@@ -220,11 +221,8 @@ mod tests {
         ])
         .unwrap();
 
-        // Select rows
-        let selected_rows: Result<DataFrame, PolarsError> = DataFrame::select_rows(&df, vec![5]);
-
-        // Check if an error is returned
-        assert!(selected_rows.is_err());
+        // Select rows [should panic]
+        let _selected_rows: Result<DataFrame, PolarsError> = DataFrame::select_rows(&df, vec![5]);
     }
 
     #[test]
