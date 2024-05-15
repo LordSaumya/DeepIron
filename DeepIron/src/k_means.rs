@@ -426,7 +426,7 @@ impl model::ClusterModeller for KMeans {
         for i in 0..x.height() {
             let cluster: usize = cluster_assignments[i];
             let point: Series = x.get(i).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
-            let centroid: Series = self.centroid_coordinates.get(cluster).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+            let centroid: Series = self.centroid_coordinates.get_col_by_index(cluster).unwrap();
             let distance: f64 = KMeans::euclidean_distance(&point, &centroid);
             compactness += distance.powi(2);
         }
