@@ -9,6 +9,7 @@ pub mod logistic_regression;
 pub mod model;
 pub mod multilayer_perceptron;
 pub mod support_vector_machine;
+pub mod k_means;
 
 #[cfg(test)]
 mod tests {
@@ -26,6 +27,7 @@ mod tests {
     use polars::prelude::*;
     use std::path::Path;
     use support_vector_machine::*;
+    use k_means::*;
 
     #[test]
     fn test_load_csv() {
@@ -186,6 +188,43 @@ mod tests {
         let expected_result: DataFrame =
             DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]).unwrap();
         assert_eq!(df, expected_result);
+    }
+
+    #[test]
+    fn test_select_rows_all_existing() {
+        // Create a simple DataFrame for testing
+        let df: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+            Series::new("col2", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+        ])
+        .unwrap();
+
+        // Select rows
+        let selected_rows: DataFrame = DataFrame::select_rows(&df, vec![0, 2, 4]).unwrap();
+
+        // Check if the rows are selected correctly
+        let expected_result: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 3.0, 5.0]),
+            Series::new("col2", &[1.0, 3.0, 5.0]),
+        ])
+        .unwrap();
+        assert_eq!(selected_rows, expected_result);
+    }
+
+    #[test]
+    fn test_select_rows_idx_out_of_bounds() {
+        // Create a simple DataFrame for testing
+        let df: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+            Series::new("col2", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+        ])
+        .unwrap();
+
+        // Select rows
+        let selected_rows: Result<DataFrame, PolarsError> = DataFrame::select_rows(&df, vec![5]);
+
+        // Check if an error is returned
+        assert!(selected_rows.is_err());
     }
 
     #[test]
