@@ -127,12 +127,12 @@ pub mod model {
         /// # Example
         ///
         /// ```no_run
-        /// let model = Model::KMeans::new(3);
+        /// let model = Model::KMeans::new_random(3, EndCondition::MaxIter(100));
         ///
         /// model.fit(&x);
         ///
         /// ```
-        fn fit(&mut self, x: &DataFrame, num_clusters: usize) -> Result<(), PolarsError>;
+        fn fit(&mut self, x: &DataFrame) -> Result<(), PolarsError>;
 
         /// Predict the cluster assignments for the given features.
         ///
@@ -151,7 +151,7 @@ pub mod model {
         /// let cluster_assignments = model.predict(&x);
         ///
         /// ```
-        fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
+        fn predict(&mut self, x: &DataFrame) -> Result<Series, PolarsError>;
 
         /// Computes the compactness of the clusters.
         /// 
@@ -170,7 +170,7 @@ pub mod model {
         /// let compactness = model.compactness(&x);
         /// 
         /// ```
-        fn compactness(&self, x: &DataFrame) -> Result<f64, PolarsError>;
+        fn compactness(&mut self, x: &DataFrame) -> Result<f64, PolarsError>;
     }
 }
 

@@ -19,6 +19,8 @@ pub trait DataFrameTransformer {
     fn min_max_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 
     fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError>;
+
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError>;
 }
 
 /// Implement DataFrameTransformer for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
@@ -50,6 +52,10 @@ impl DataFrameTransformer for Result<DataFrame, PolarsError> {
     fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError> {
         let df: &DataFrame = self.as_ref().unwrap();
         df.get_col_by_index(index)
+    }
+
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError> {
+        DataFrame::select_rows(df, indices)
     }
 }
 
@@ -188,6 +194,33 @@ impl DataFrameTransformer for DataFrame {
     fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError> {
         let series: &[Series] = self.get_columns();
         Ok(series[index].clone())
+    }
+    
+    /// Select rows from the DataFrame by index.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `df` - The DataFrame to select rows from.
+    /// 
+    /// * `indices` - A vector of row indices to select.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<DataFrame, PolarsError>` - A DataFrame containing the selected rows.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let selected_rows = DataFrame::select_rows(&df, vec![0, 1, 2]);
+    /// ```
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError> {
+        let mut mask: Vec<bool> = vec![false; df.height()];
+        for index in indices {
+            mask[index] = true;
+        }
+        let chunked_array_mask: ChunkedArray<BooleanType> = ChunkedArray::new("mask", mask).into();
+        let selected_df: DataFrame = df.filter(&chunked_array_mask)?;
+        Ok(selected_df)
     }
 }
 

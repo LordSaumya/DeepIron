@@ -43,7 +43,7 @@ A basic machine learning library built in Rust.
         - [ ] Forward Propagation
         - [ ] Backward Propagation
 - [ ] Clustering
-    - [ ] K-Means Clustering
+    - [X] K-Means Clustering
     - [ ] Hierarchical Clustering
 
 **Future additions**
