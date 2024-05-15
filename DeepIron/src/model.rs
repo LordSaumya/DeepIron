@@ -170,7 +170,7 @@ pub mod model {
         /// let compactness = model.compactness(&x);
         /// 
         /// ```
-        fn compactness(&self, x: &DataFrame) -> Result<f64, PolarsError>;
+        fn compactness(&mut self, x: &DataFrame) -> Result<f64, PolarsError>;
     }
 }
 
