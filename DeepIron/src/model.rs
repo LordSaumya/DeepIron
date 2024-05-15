@@ -132,7 +132,7 @@ pub mod model {
         /// model.fit(&x);
         ///
         /// ```
-        fn fit(&mut self, x: &DataFrame, num_clusters: usize) -> Result<(), PolarsError>;
+        fn fit(&mut self, x: &DataFrame) -> Result<(), PolarsError>;
 
         /// Predict the cluster assignments for the given features.
         ///
