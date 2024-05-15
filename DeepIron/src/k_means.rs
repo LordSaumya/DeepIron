@@ -67,7 +67,7 @@ impl KMeans {
         KMeans {
             init_type: InitType::Random,
             n_clusters,
-            centroid_coordinates: DataFrame::new(vec![]).unwrap(),
+            centroid_coordinates: DataFrame::new::<Series>(vec![]).unwrap(),
             end_condition
         }
     }
@@ -93,7 +93,7 @@ impl KMeans {
         KMeans {
             init_type: InitType::UserDefined(centroids),
             n_clusters,
-            centroid_coordinates: DataFrame::new(vec![]).unwrap(),
+            centroid_coordinates: DataFrame::new::<Series>(vec![]).unwrap(),
             end_condition
         }
     }
@@ -117,7 +117,7 @@ impl KMeans {
         KMeans {
             init_type: InitType::Equidistant,
             n_clusters,
-            centroid_coordinates: DataFrame::new(vec![]).unwrap(),
+            centroid_coordinates: DataFrame::new::<Series>(vec![]).unwrap(),
             end_condition
         }
     }
@@ -177,14 +177,11 @@ impl KMeans {
     fn check_convergence(old_centroids: &DataFrame, new_centroids: &DataFrame, tol: f64) -> bool {
         let mut converged: bool = true;
 
-        for (i, _) in old_centroids.columns().iter().enumerate() {
-            let old_centroid: &Series = old_centroids.column(i).unwrap();
-            let new_centroid: &Series = new_centroids.column(i).unwrap();
+        for i in 0..old_centroids.height() {
+            let old_centroid: Vec<f64> = old_centroids.get(i).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+            let new_centroid: Vec<f64> = new_centroids.get(i).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
 
-            let old_centroid: Vec<f64> = old_centroid.f64().unwrap().into_iter().map(|x| x.unwrap()).collect();
-            let new_centroid: Vec<f64> = new_centroid.f64().unwrap().into_iter().map(|x| x.unwrap()).collect();
-
-            for (j, _) in old_centroid.iter().enumerate() {
+            for j in 0..old_centroids.width() {
                 if (old_centroid[j] - new_centroid[j]).abs() > tol {
                     converged = false;
                     break;
@@ -213,17 +210,13 @@ impl KMeans {
     /// 
     /// ```
     fn initialise_centroids(&mut self, x: &DataFrame) -> Result<(), PolarsError> {
-        let mut centroids: DataFrame = DataFrame::new(vec![]).unwrap();
+        let mut centroids: DataFrame = DataFrame::new::<Series>(vec![]).unwrap();
 
-        /// Find min and max for each column (feature)
-        let mut min: Vec<f64> = Vec::with_capacity(x.width());
-        let mut max: Vec<f64> = Vec::with_capacity(x.width());
-        for col in x.columns() {
-            min.push(col.min().unwrap().unwrap());
-            max.push(col.max().unwrap().unwrap());
-        }
+        // Find min and max for each column (feature)
+        let min: Vec<f64> = centroids.min().get(0).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+        let max: Vec<f64> = centroids.max().get(0).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
 
-        match self.init_type {
+        match &self.init_type {
             InitType::Random => {
                 for _ in 0..self.n_clusters {
                     let mut centroid: Vec<f64> = Vec::with_capacity(x.width());
@@ -242,11 +235,12 @@ impl KMeans {
                 if user_centroids.width() != x.width() {
                     panic!("Number of features in user-defined centroids does not match number of features in data");
                 }
-                self.centroid_coordinates = user_centroids;
+                self.centroid_coordinates = user_centroids.clone();
             }
 
             InitType::Equidistant => {
-                let equidist: Vec<f64> = (max - min).iter().map(|x| x / (n_clusters as f64)).collect();
+                let diff: Vec<f64> = max.iter().zip(min.iter()).map(|(x, y)| x - y).collect();
+                let equidist: Vec<f64> = diff.iter().map(|x| x / (self.n_clusters as f64)).collect();
                 for i in 0..self.n_clusters {
                     let mut centroid: Vec<f64> = Vec::with_capacity(x.width());
                     for j in 0..x.width() {
@@ -257,6 +251,7 @@ impl KMeans {
                 self.centroid_coordinates = centroids;
             }
         }
+        Ok(())
     }
 
     /// Assigns a cluster to each data point based on the current centroid coordinates.
@@ -282,7 +277,9 @@ impl KMeans {
             let mut min_distance: f64 = f64::INFINITY;
             let mut cluster: usize = 0;
             for j in 0..self.n_clusters {
-                let distance: f64 = KMeans::euclidean_distance(&x.row(i), &self.centroid_coordinates.row(j));
+                let point_1: Series = x.get(i).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+                let point_2: Series = self.centroid_coordinates.get(j).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+                let distance: f64 = KMeans::euclidean_distance(&point_1, &point_2);
                 if distance < min_distance {
                     min_distance = distance;
                     cluster = j;
@@ -319,8 +316,8 @@ impl model::ClusterModeller for KMeans {
 
         self.initialise_centroids(x)?;
 
-        let mut old_centroids: DataFrame = DataFrame::new(vec![]).unwrap();
-        let mut new_centroids: DataFrame = DataFrame::new(vec![]).unwrap();
+        let mut old_centroids: DataFrame = DataFrame::new::<Series>(vec![]).unwrap();
+        let mut new_centroids: DataFrame = DataFrame::new::<Series>(vec![]).unwrap();
 
         match self.end_condition {
             EndCondition::MaxIter(max_iter) => {
@@ -329,10 +326,10 @@ impl model::ClusterModeller for KMeans {
                     let cluster_assignments: Vec<usize> = self.assign_clusters(x);
                     for i in 0..self.n_clusters {
                         let cluster_indices: Vec<usize> = cluster_assignments.iter().enumerate().filter(|(_, &x)| x == i).map(|(x, _)| x).collect();
-                        let cluster_data: DataFrame = x.select_rows(cluster_indices.as_slice())?;
+                        let cluster_data: DataFrame = DataFrame::select_rows(&x, cluster_indices)?;
                         let mut new_centroid: Vec<f64> = Vec::with_capacity(x.width());
                         for j in 0..x.width() {
-                            new_centroid.push(cluster_data.column(j).unwrap().mean().unwrap().unwrap());
+                            new_centroid.push(cluster_data.get_col_by_index(j).unwrap().mean().unwrap());
                         }
                         new_centroids.with_column(Series::new("centroid", new_centroid))?;
                     }
@@ -349,10 +346,10 @@ impl model::ClusterModeller for KMeans {
                     let cluster_assignments: Vec<usize> = self.assign_clusters(x);
                     for i in 0..self.n_clusters {
                         let cluster_indices: Vec<usize> = cluster_assignments.iter().enumerate().filter(|(_, &x)| x == i).map(|(x, _)| x).collect();
-                        let cluster_data: DataFrame = x.select_rows(cluster_indices.as_slice())?;
+                        let cluster_data: DataFrame = DataFrame::select_rows(&x, cluster_indices)?;
                         let mut new_centroid: Vec<f64> = Vec::with_capacity(x.width());
                         for j in 0..x.width() {
-                            new_centroid.push(cluster_data.column(j).unwrap().mean().unwrap().unwrap());
+                            new_centroid.push(cluster_data.get_col_by_index(j).unwrap().mean().unwrap());
                         }
                         new_centroids.with_column(Series::new("centroid", new_centroid))?;
                     }
@@ -363,6 +360,7 @@ impl model::ClusterModeller for KMeans {
                 }
             }
         }
+        Ok(())
     }
 
     /// Predict the cluster assignments for a DataFrame of features.
@@ -410,7 +408,9 @@ impl model::ClusterModeller for KMeans {
         let mut compactness: f64 = 0.0;
         for i in 0..x.height() {
             let cluster: usize = cluster_assignments[i];
-            let distance: f64 = KMeans::euclidean_distance(&x.row(i), &self.centroid_coordinates.row(cluster));
+            let point: Series = x.get(i).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+            let centroid: Series = self.centroid_coordinates.get(cluster).unwrap().into_iter().map(|x: AnyValue| if let AnyValue::Float64(x) = x { x } else { panic!("Invalid type") }).collect();
+            let distance: f64 = KMeans::euclidean_distance(&point, &centroid);
             compactness += distance.powi(2);
         }
         Ok(compactness)
