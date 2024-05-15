@@ -151,7 +151,7 @@ pub mod model {
         /// let cluster_assignments = model.predict(&x);
         ///
         /// ```
-        fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError>;
+        fn predict(&mut self, x: &DataFrame) -> Result<Series, PolarsError>;
 
         /// Computes the compactness of the clusters.
         /// 
