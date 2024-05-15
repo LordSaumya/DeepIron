@@ -419,8 +419,9 @@ impl model::ClusterModeller for KMeans {
     /// let compactness = model.compactness(&x);
     /// 
     /// ```
-    fn compactness(&self, x: &DataFrame) -> Result<f64, PolarsError> {
-        let cluster_assignments: Vec<usize> = self.assign_clusters(x);
+    fn compactness(&mut self, x: &DataFrame) -> Result<f64, PolarsError> {
+        let cluster_assignments: Series = self.predict(x)?;
+        let cluster_assignments: Vec<usize> = cluster_assignments.f64().unwrap().into_iter().map(|x| x.unwrap() as usize).collect();
         let mut compactness: f64 = 0.0;
         for i in 0..x.height() {
             let cluster: usize = cluster_assignments[i];
