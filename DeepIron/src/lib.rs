@@ -1695,4 +1695,50 @@ mod tests {
         ];
         assert!(possible_solutions.contains(&predictions));
     }
+
+    #[test]
+    fn test_kmeans_compactness_single_feature() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0])]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(2, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Compute the compactness
+        let compactness: f64 = model.compactness(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Compactness: {:?}", compactness);
+
+        // Check the compactness
+        assert!(compactness == 4.0);
+    }
+
+    #[test]
+    fn test_kmeans_compactness_multi_features() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(3, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Compute the compactness
+        let compactness: f64 = model.compactness(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Compactness: {:?}", compactness);
+
+        // Check the compactness
+        assert!((compactness - 18.0).abs() < 0.1);
+    } 
 }
