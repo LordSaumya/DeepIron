@@ -11,6 +11,7 @@ pub mod model;
 pub mod multilayer_perceptron;
 pub mod support_vector_machine;
 pub mod k_means;
+pub mod hierarchical_clustering;
 
 #[cfg(test)]
 mod tests {

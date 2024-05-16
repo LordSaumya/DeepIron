@@ -154,7 +154,7 @@ impl HierarchicalClustering {
     }
 }
 
-impl Model for HierarchicalClustering {
+impl model::ClusterModeller for HierarchicalClustering {
     /// Fit the hierarchical clustering model to the input data.
     /// 
     /// # Arguments
@@ -231,8 +231,35 @@ impl Model for HierarchicalClustering {
     /// let y = model.predict(&x);
     /// 
     /// ```
-    fn predict(&self, x: &DataFrame) -> Series {
-        let mut cluster_series = Series::new("clusters", &self.clusters);
-        cluster_series
+    fn predict(&mut self, x: &DataFrame) -> Result<Series, PolarsError> {
+        let mut cluster_series: Series = Series::new("clusters", &self.clusters);
+        Ok(cluster_series)
+    }
+
+    /// Calculate the compactness of the clusters formed by the model using sum of squared errors.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - The input data.
+    /// 
+    /// # Returns
+    /// 
+    /// * `f64` - The compactness of the clusters formed by the model.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let compactness = model.compactness(&x);
+    /// 
+    /// ```
+    fn compactness(&mut self, x: &DataFrame) -> Result<f64, PolarsError> {
+        let mut compactness = 0.0;
+        for i in 0..self.clusters.len() {
+            for j in 0..self.clusters[i].height() {
+                compactness += HierarchicalClustering::euclidean_distance(&x.row(j), &self.clusters[i].row(j)).powi(2);
+            }
+        }
+        Ok(compactness)
     }
 }
