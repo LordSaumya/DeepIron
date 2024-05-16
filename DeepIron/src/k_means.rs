@@ -17,7 +17,7 @@ use polars::series::Series;
 /// 
 /// model.fit(&x);
 /// 
-/// let  = model.predict(&x);
+/// let y = model.predict(&x);
 ///
 /// ```
 pub struct KMeans {
