@@ -1072,221 +1072,6 @@ mod tests {
     }
 
     #[test]
-    fn test_linear_layer_new() {
-        // Create a linear layer
-        let linear_layer: LinearLayer = LinearLayer::new(
-            Series::new("weights", [1.0, 2.0, 3.0]),
-            Series::new("biases", [1.0, 2.0, 3.0]),
-        );
-
-        // Check if the linear layer is created correctly
-        assert_eq!(
-            linear_layer.weights,
-            Series::new("weights", vec![1.0, 2.0, 3.0])
-        );
-        assert_eq!(
-            linear_layer.biases,
-            Series::new("biases", vec![1.0, 2.0, 3.0])
-        );
-    }
-
-    #[test]
-    fn test_linear_layer_zeroes() {
-        // Create a linear layer
-        let linear_layer: LinearLayer = LinearLayer::zeroes(3);
-
-        // Check if the linear layer is created correctly
-        assert_eq!(
-            linear_layer.weights,
-            Series::new("weights", vec![0.0, 0.0, 0.0])
-        );
-        assert_eq!(
-            linear_layer.biases,
-            Series::new("biases", vec![0.0, 0.0, 0.0])
-        );
-    }
-
-    #[test]
-    fn test_linear_layer_new_random() {
-        // Create a linear layer
-        let linear_layer: LinearLayer = LinearLayer::new_random(5, [-1.0, 1.0]);
-
-        // Check if the linear layer is created correctly
-        assert_eq!(linear_layer.weights.len(), 5);
-        assert_eq!(linear_layer.biases.len(), 5);
-
-        // Check if the weights and biases are within the specified range
-        assert!(linear_layer.weights.f64().unwrap().min().unwrap() >= -1.0);
-        assert!(linear_layer.weights.f64().unwrap().max().unwrap() <= 1.0);
-    }
-
-    #[test]
-    fn test_linear_layer_forward() {
-        // parameters
-        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
-        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
-        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
-        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
-
-        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
-
-        // Create a linear layer
-        let linear_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
-
-        // Compute the forward pass
-        let output: Series = linear_layer.forward(input.clone(), activation_function.clone());
-
-        assert_eq!(
-            output,
-            Series::new(
-                "activated_values",
-                &[
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(0).unwrap()
-                    ),
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(1).unwrap()
-                    ),
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(2).unwrap()
-                    )
-                ]
-            )
-        );
-    }
-
-    // #[test]
-    // fn test_linear_layer_backward() {
-    //     // parameters
-    //     let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
-    //     let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
-    //     let activation_function: ActivationFunctionType = ActivationFunctionType::ReLU;
-    //     let loss_function: LossFunctionType = LossFunctionType::Hinge;
-    //     let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
-
-    //     // Create a linear layer
-    //     let test_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
-
-    //     // Compute the forward pass
-
-    //     let output: Series = test_layer.forward(input.clone(), activation_function.clone());
-
-    //     // Compute the backward pass
-    //     let (d_input, d_weights, d_biases): (Series, Series, Series) = test_layer.backward(
-    //         input.clone(),
-    //         output.clone(),
-    //         loss_function.clone,
-    //         activation_function,
-    //         loss_function.gradient(&input.clone().into_frame(), &output.clone(), &output.clone()),
-    //     );
-    // }
-
-    #[test]
-    fn test_mlp_forward_1_layer() {
-        // Parameters
-        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
-        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
-        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
-        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
-
-        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
-
-        // Create a MLP
-
-        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
-        mlp = mlp.add_layer(LinearLayer::new(weights.clone(), biases.clone()), activation_function.clone());
-
-        // Compute the forward pass
-        let output: Series = mlp.forward(input.clone());
-
-        assert_eq!(
-            output,
-            Series::new(
-                "activated_values",
-                &[
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(0).unwrap()
-                    ),
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(1).unwrap()
-                    ),
-                    sigmoid(
-                        (&input * &weights).sum::<f64>().unwrap()
-                            + &biases.f64().unwrap().get(2).unwrap()
-                    )
-                ]
-            )
-        );
-    }
-
-    #[test]
-    fn test_mlp_forward_2_layers() {
-        // Parameters
-        let weights_1: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
-        let biases_1: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
-        let weights_2: Series = Series::new("weights", vec![7.0, 8.0, 9.0]);
-        let biases_2: Series = Series::new("biases", vec![10.0, 11.0, 12.0]);
-
-        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
-        let input: Series = Series::new("input", vec![13.0, 14.0, 15.0]);
-
-        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
-
-        // Create a MLP
-        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
-        mlp = mlp.add_layer(LinearLayer::new(weights_1.clone(), biases_1.clone()), activation_function.clone());
-        mlp = mlp.add_layer(LinearLayer::new(weights_2.clone(), biases_2.clone()), activation_function.clone());
-
-        // Compute the forward pass
-        let output: Series = mlp.forward(input.clone());
-
-        // Compute true values
-        let true_values: Vec<f64> = vec![
-            sigmoid(
-                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(0).unwrap(),
-            ),
-            sigmoid(
-                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(1).unwrap(),
-            ),
-            sigmoid(
-                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(2).unwrap(),
-            ),
-        ];
-
-        let true_values: Vec<f64> = vec![
-            sigmoid(
-                (&Series::new("input", true_values.clone()) * &weights_2)
-                    .sum::<f64>()
-                    .unwrap()
-                    + &biases_2.f64().unwrap().get(0).unwrap(),
-            ),
-            sigmoid(
-                (&Series::new("input", true_values.clone()) * &weights_2)
-                    .sum::<f64>()
-                    .unwrap()
-                    + &biases_2.f64().unwrap().get(1).unwrap(),
-            ),
-            sigmoid(
-                (&Series::new("input", true_values.clone()) * &weights_2)
-                    .sum::<f64>()
-                    .unwrap()
-                    + &biases_2.f64().unwrap().get(2).unwrap(),
-            ),
-        ];
-
-        // Compare the output
-        assert_eq!(
-            output,
-            Series::new("activated_values", &true_values)
-        );
-    }
-
-    #[test]
     fn test_activation_function_softmax() {
         // Create a simple series for testing
         let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
@@ -1741,4 +1526,379 @@ mod tests {
         // Check the compactness
         assert!((compactness - 18.0).abs() < 0.1);
     } 
+
+    #[test]
+    fn test_linear_layer_new() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(
+            Series::new("weights", [1.0, 2.0, 3.0]),
+            Series::new("biases", [1.0, 2.0, 3.0]),
+        );
+
+        // Check if the linear layer is created correctly
+        assert_eq!(
+            linear_layer.weights,
+            Series::new("weights", vec![1.0, 2.0, 3.0])
+        );
+        assert_eq!(
+            linear_layer.biases,
+            Series::new("biases", vec![1.0, 2.0, 3.0])
+        );
+    }
+
+    #[test]
+    fn test_linear_layer_zeroes() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::zeroes(3);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(
+            linear_layer.weights,
+            Series::new("weights", vec![0.0, 0.0, 0.0])
+        );
+        assert_eq!(
+            linear_layer.biases,
+            Series::new("biases", vec![0.0, 0.0, 0.0])
+        );
+    }
+
+    #[test]
+    fn test_linear_layer_new_random() {
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new_random(5, [-1.0, 1.0]);
+
+        // Check if the linear layer is created correctly
+        assert_eq!(linear_layer.weights.len(), 5);
+        assert_eq!(linear_layer.biases.len(), 5);
+
+        // Check if the weights and biases are within the specified range
+        assert!(linear_layer.weights.f64().unwrap().min().unwrap() >= -1.0);
+        assert!(linear_layer.weights.f64().unwrap().max().unwrap() <= 1.0);
+    }
+
+    #[test]
+    fn test_linear_layer_forward() {
+        // parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a linear layer
+        let linear_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+        // Compute the forward pass
+        let output: Series = linear_layer.forward(input.clone(), activation_function.clone());
+
+        assert_eq!(
+            output,
+            Series::new(
+                "activated_values",
+                &[
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(0).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(1).unwrap()
+                    ),
+                    sigmoid(
+                        (&input * &weights).sum::<f64>().unwrap()
+                            + &biases.f64().unwrap().get(2).unwrap()
+                    )
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_linear_layer_backward() {
+        // Parameters
+        let weights: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let input: Series = Series::new("input", vec![7.0, 8.0, 9.0]);
+        let lr: f64 = 0.01;
+
+        // Create a linear layer
+        let test_layer: LinearLayer = LinearLayer::new(weights.clone(), biases.clone());
+
+        // Simulate gradient output for the backward pass
+        let grad_output: Series = Series::new("grad_output", vec![2.0, 2.0, 2.0]);
+
+        // Compute the backward pass
+        let (updated_weights, updated_biases) = test_layer.backward(input.clone(), grad_output.clone(), lr);
+
+        // Check if the weights and biases are updated correctly
+        assert_eq!(
+            updated_weights,
+            Series::new(
+                "weights",
+                &[
+                    1.0 - lr * 2.0 * 7.0,
+                    2.0 - lr * 2.0 * 8.0,
+                    3.0 - lr * 2.0 * 9.0
+                ]
+            )
+        );
+
+        assert_eq!(
+            updated_biases,
+            Series::new(
+                "biases",
+                &[
+                    4.0 - lr * 6.0,
+                    5.0 - lr * 6.0,
+                    6.0 - lr * 6.0
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_mlp_new() {
+        let mlp: MLP = MLP::new(LossFunctionType::MeanSquaredError);
+
+        // Check if the MLP is created correctly
+        assert_eq!(mlp.layers.len(), 0);
+        assert!(mlp.loss_function == LossFunctionType::MeanSquaredError);
+    }
+
+    #[test]
+    fn test_mlp_add_layer() {
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::MeanSquaredError);
+
+        // Add a layer
+        mlp = mlp.add_layer(LinearLayer::zeroes(3), ActivationFunctionType::Sigmoid);
+
+        // Check if the layer is added correctly
+        assert_eq!(mlp.layers.len(), 1);
+    }
+
+    #[test]
+    fn test_mlp_set_layer() {
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::MeanSquaredError);
+
+        // Add a layer
+        mlp = mlp.add_layer(LinearLayer::zeroes(3), ActivationFunctionType::Sigmoid);
+
+        // Set a layer
+        mlp = mlp.set_layer(0, LinearLayer::zeroes(4), ActivationFunctionType::ReLU);
+
+        // Check if the layer is set correctly
+        assert_eq!(mlp.layers[0].weights.len(), 4);
+        assert_eq!(mlp.activation_functions[0], ActivationFunctionType::ReLU);
+    }
+
+    #[test]
+    fn test_mlp_new_with_layers() {
+        // Create a MLP
+        let mlp: MLP = MLP::new_with_layers(
+            LossFunctionType::MeanSquaredError,
+            vec![
+                LinearLayer::zeroes(3),
+                LinearLayer::zeroes(3),
+                LinearLayer::zeroes(3),
+            ],
+            vec![
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+            ]
+        );
+
+        // Check if the MLP is created correctly
+        assert_eq!(mlp.layers.len(), 3);
+        assert_eq!(mlp.activation_functions.len(), 3);
+        assert!(mlp.loss_function == LossFunctionType::MeanSquaredError);
+    }
+
+    #[test]
+    fn test_mlp_forward() {
+        // Parameters
+        let input: Series = Series::new("input", vec![1.0, 2.0, 3.0]);
+        let weights1: Series = Series::new("weights1", vec![1.0, 2.0, 3.0]);
+        let biases1: Series = Series::new("biases1", vec![4.0, 5.0, 6.0]);
+        let weights2: Series = Series::new("weights2", vec![1.0, 2.0, 3.0]);
+        let biases2: Series = Series::new("biases2", vec![4.0, 5.0, 6.0]);
+        let weights3: Series = Series::new("weights3", vec![1.0, 2.0, 3.0]);
+        let biases3: Series = Series::new("biases3", vec![4.0, 5.0, 6.0]);
+
+        // Create a MLP
+        let mlp: MLP = MLP::new_with_layers(
+            LossFunctionType::MeanSquaredError,
+            vec![
+                LinearLayer::new(weights1.clone(), biases1.clone()),
+                LinearLayer::new(weights2.clone(), biases2.clone()),
+                LinearLayer::new(weights3.clone(), biases3.clone()),
+            ],
+            vec![
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+            ]
+        );
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        let is_close = |a: f64, b: f64| -> bool { return (a - b).abs() < 1e-3 };
+
+        // Expected outputs
+        let expected_output: &[f64; 3] = &[
+            sigmoid(
+                (&input * &weights1).sum::<f64>().unwrap()
+                    + &biases1.f64().unwrap().get(0).unwrap()
+            ),
+            sigmoid(
+                (&input * &weights1).sum::<f64>().unwrap()
+                    + &biases1.f64().unwrap().get(1).unwrap()
+            ),
+            sigmoid(
+                (&input * &weights1).sum::<f64>().unwrap()
+                    + &biases1.f64().unwrap().get(2).unwrap()
+            )
+        ];
+        
+        // Check if the output is computed correctly
+        for i in 0..3 {
+            assert!(is_close(output.f64().unwrap().get(i).unwrap(), expected_output[i]));
+        }
+    }
+
+    #[test]
+    fn test_mlp_forward_2_layers() {
+        // Parameters
+        let weights_1: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases_1: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let weights_2: Series = Series::new("weights", vec![7.0, 8.0, 9.0]);
+        let biases_2: Series = Series::new("biases", vec![10.0, 11.0, 12.0]);
+
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![13.0, 14.0, 15.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights_1.clone(), biases_1.clone()), activation_function.clone());
+        mlp = mlp.add_layer(LinearLayer::new(weights_2.clone(), biases_2.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        // Compute true values
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        // Compare the output
+        assert_eq!(
+            output,
+            Series::new("activated_values", &true_values)
+        );
+    }
+
+    #[test]
+    fn test_mlp_backward() {
+        // Parameters
+        let input: Series = Series::new("input", vec![1.0, 2.0, 3.0]);
+        let weights1: Series = Series::new("weights1", vec![1.0, 2.0, 3.0]);
+        let biases1: Series = Series::new("biases1", vec![4.0, 5.0, 6.0]);
+        let weights2: Series = Series::new("weights2", vec![1.0, 2.0, 3.0]);
+        let biases2: Series = Series::new("biases2", vec![4.0, 5.0, 6.0]);
+        let weights3: Series = Series::new("weights3", vec![1.0, 2.0, 3.0]);
+        let biases3: Series = Series::new("biases3", vec![4.0, 5.0, 6.0]);
+        let lr: f64 = 0.0001;
+
+        // Create a MLP
+        let mut mlp: MLP = MLP::new_with_layers(
+            LossFunctionType::MeanSquaredError,
+            vec![
+                LinearLayer::new(weights1.clone(), biases1.clone()),
+                LinearLayer::new(weights2.clone(), biases2.clone()),
+                LinearLayer::new(weights3.clone(), biases3.clone()),
+            ],
+            vec![
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+                ActivationFunctionType::Sigmoid,
+            ]
+        );
+        // Actual output
+        let actual_output: Series = Series::new("output", vec![1.0, 2.0, 3.0]);
+
+        // Compute the backward pass
+        let _ = mlp.fit(&DataFrame::new(vec![input]).unwrap(), &actual_output, 1, lr);
+
+        let is_close = |a: f64, b: f64| -> bool { return (a - b).abs() < 1e-3 };
+
+        // Expected outputs
+        let expected_layer_0_weights = Series::new("weights1", vec![
+            1.0 - lr * 2.0 * 1.0,
+            2.0 - lr * 2.0 * 2.0,
+            3.0 - lr * 2.0 * 3.0
+        ]);
+
+        let expected_layer_0_biases = Series::new("biases1", vec![
+            4.0 - lr * 2.0,
+            5.0 - lr * 2.0,
+            6.0 - lr * 2.0
+        ]);
+
+        let expected_layer_1_weights = Series::new("weights2", vec![
+            1.0 - lr * 2.0 * 1.0,
+            2.0 - lr * 2.0 * 2.0,
+            3.0 - lr * 2.0 * 3.0
+        ]);
+
+        let expected_layer_1_biases = Series::new("biases2", vec![
+            4.0 - lr * 2.0,
+            5.0 - lr * 2.0,
+            6.0 - lr * 2.0
+        ]);
+
+        // Check if the weights and biases are updated correctly
+        for i in 0..3 {
+            assert!(is_close(mlp.layers[0].weights.f64().unwrap().get(i).unwrap(), expected_layer_0_weights.f64().unwrap().get(i).unwrap()));
+            assert!(is_close(mlp.layers[0].biases.f64().unwrap().get(i).unwrap(), expected_layer_0_biases.f64().unwrap().get(i).unwrap()));
+            assert!(is_close(mlp.layers[1].weights.f64().unwrap().get(i).unwrap(), expected_layer_1_weights.f64().unwrap().get(i).unwrap()));
+            assert!(is_close(mlp.layers[1].biases.f64().unwrap().get(i).unwrap(), expected_layer_1_biases.f64().unwrap().get(i).unwrap()));
+        }
+    }
 }
