@@ -38,28 +38,39 @@ pub mod layer {
         fn forward(&self, inputs: Series, activation_function: ActivationFunctionType) -> Series;
 
         /// Performs a backward pass on the layer using the given loss function, calculating the gradients of the weights and biases for each layer.
-        /// 
+        ///
         /// # Example
-        /// 
+        ///
         /// ```
-        /// let layer: LinearLayer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
-        /// 
-        /// let (updated_weights, updated_biases) = layer.backward(Series::new("inputs", vec![1.0, 2.0, 3.0]), Series::new("grad_outputs", vec![1.0, 2.0, 3.0], 0.01);
+        /// let layer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
+        ///
+        /// let gradients = layer.backward(Series::new("inputs", vec![1.0, 2.0, 3.0]), Series::new("outputs", vec![1.0, 2.0, 3.0]), LossFunctionType::BinaryCrossEntropy, Series::new("upstream_gradient", vec![1.0, 2.0, 3.0]));
+        ///
         /// ```
         ///
         /// # Arguments
-        /// 
+        ///
         /// * `inputs` - A series of inputs to the layer.
-        /// 
-        /// * `grad_outputs` - A series of gradients of the outputs of the layer.
-        /// 
-        /// * `lr` - The learning rate to use for the update.
-        /// 
+        ///
+        /// * `outputs` - A series of outputs from the layer.
+        ///
+        /// * `loss_function` - The loss function to use for the layer.
+        ///
+        /// * `activation_function` - The activation function to use for the layer.
+        ///
+        /// * `upstream_gradient` - The gradients from the subsequent layer.
+        ///
         /// # Returns
-        /// 
-        /// A tuple of the updated weights and biases for the layer.
-        /// 
-        fn backward(&self, inputs: Series, grad_outputs: Series, lr: f64) -> (Series, Series);
+        ///
+        /// A tuple of three series of gradients, corresponding to the gradients of the weights, biases, and inputs, respectively.
+        fn backward(
+            &self,
+            inputs: Series,
+            outputs: Series,
+            loss_function: LossFunctionType,
+            activation_function: ActivationFunctionType,
+            upstream_gradient: Series,
+        ) -> (Series, Series, Series);
     }
 
     /// A struct that defines a linear (fully-connected) layer in a neural network.
@@ -171,19 +182,46 @@ pub mod layer {
             activation_function.activate(&(dot_prod_series + self.biases.clone()))
         }
 
-        fn backward(&self, inputs: Series, grad_outputs: Series, lr: f64) -> (Series, Series) {
-            // Calculate gradient with respect to inputs
-            let grad_input: Series = &inputs * &grad_outputs;
-
-            // Calculate gradient with respect to weights
-            let grad_weights: Series = &inputs * &grad_outputs;
-
-            let grad_biases: f64 = grad_outputs.f64().unwrap().sum().unwrap();
-            
-            let new_weights: Series = self.weights.clone() - grad_weights * lr;
-            let new_biases: Series = self.biases.clone() - Series::new("biases", vec![grad_biases; self.biases.len()]) * lr;
-
-            (new_weights, new_biases)
+        /// # WARNING: This function is not yet implemented.
+        /// Performs a backward pass on the layer using the given loss function, calculating the gradients of the weights and biases for each layer.
+        /// 
+        /// 
+        /// # Arguments
+        /// 
+        /// 
+        /// * `inputs` - A series of inputs to the layer.
+        /// 
+        /// * `outputs` - A series of outputs from the layer.
+        /// 
+        /// * `loss_function` - The loss function to use for the layer.
+        /// 
+        /// * `activation_function` - The activation function to use for the layer.
+        /// 
+        /// * `upstream_gradient` - The gradients from the subsequent layer.
+        /// 
+        /// # Returns
+        /// 
+        /// A tuple of three series of gradients, corresponding to the gradients of the weights, biases, and inputs, respectively.
+        fn backward(
+            &self,
+            inputs: Series,                              // X
+            outputs: Series,                             // Z
+            loss_function: LossFunctionType,             // L
+            activation_function: ActivationFunctionType, // A
+            upstream_gradients: Series,                  // dL/dZ
+        ) -> (Series, Series, Series) {
+            // let activation_gradients: Series = activation_function.gradient(&outputs); // dA/dZ
+            // let weighted_gradients: Series = &activation_gradients * &upstream_gradients; // dL/dZ * dA/dZ
+            // let weight_gradients: Series = &inputs * &weighted_gradients; // dW/dX = X * dL/dZ * dA/dZ
+            // let bias_gradients: Series = weighted_gradients; // dB/dX = dL/dZ * dA/dZ
+            // let input_gradients: Series = loss_function.gradient(&inputs.into_frame(), 
+            //     &outputs, &upstream_gradients); // dL/dX = dL/dZ * dA/dZ * dZ/dX
+            // (
+            //     weight_gradients, // dW/dX
+            //     bias_gradients,   // dB/dZ
+            //     input_gradients,  // dL/dX
+            // )
+            unimplemented!()
         }
     }
 }
