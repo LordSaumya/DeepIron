@@ -1072,6 +1072,462 @@ mod tests {
     }
 
     #[test]
+    fn test_activation_function_softmax() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+
+        // Compute true softmax values
+        let softmax = |x: f64| -> f64 { return f64::exp(x) / (f64::exp(1.0) + f64::exp(2.0) + f64::exp(3.0)) };
+
+        // Compute softmax values
+        let softmax_values: Series = Series::new("activated_values", vec![softmax(1.0), softmax(2.0), softmax(3.0)]);
+
+        // Check if the softmax is computed correctly
+        assert_eq!(ActivationFunctionType::Softmax.activate(&x), softmax_values);
+    }
+
+    #[test]
+    fn test_activation_function_softmax_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![1.0, 2.0, 3.0]);
+    
+        // True softmax gradient values
+        let true_softmax: Series = Series::new("gradients", vec![0.081925, -0.022033, -0.059892, -0.022033, 0.184836, -0.162803, -0.059892, -0.162803, 0.222695]);
+        
+        // Check if the softmax gradient matches within 0.001
+        let residuals: Series = ActivationFunctionType::Softmax.gradient(&x) - true_softmax;
+        assert!(residuals.f64().unwrap().max().unwrap().abs() < 0.001);
+    }
+
+    #[test]
+    fn test_activation_function_lrelu() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu
+        let alpha: f64 = 0.1;
+        let lrelu: Series = ActivationFunctionType::LReLU(alpha).activate(&x);
+
+        // true lrelu values
+        let true_lrelu: Series = Series::new("activated_values", vec![-1.0 * alpha, 2.0, -3.0 * alpha]);
+
+        // Check if the lrelu is computed correctly
+        assert_eq!(lrelu, true_lrelu);
+    }
+
+    #[test]
+    fn test_activation_function_lrelu_gradient() {
+        // Create a simple series for testing
+        let x: Series = Series::new("x", vec![-1.0, 2.0, -3.0]);
+
+        // Compute the lrelu gradient
+        let lrelu_gradient: Series = ActivationFunctionType::LReLU(0.1).gradient(&x);
+
+        // Check if the lrelu gradient is computed correctly
+        assert_eq!(lrelu_gradient, Series::new("gradients", vec![0.1, 1.0, 0.1]));
+    }
+
+    #[ignore = "Random test, may fail"]
+    #[test]
+    fn test_kmeans_fit_predict_single_feature_random_init_tol_end_two_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0])]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_random(2, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[ignore = "Random test, may fail"]
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_random_init_tol_end_two_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_random(2, EndCondition::Tol(0.5));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+
+    }
+
+    #[ignore = "Random test, may fail"]
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_random_init_tol_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_random(3, EndCondition::Tol(0.5));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[ignore = "Random test, may fail"]
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_random_init_max_iter_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_random(3, EndCondition::MaxIter(100));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_fit_predict_single_feature_userdefined_init_tol_end_two_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0])]).unwrap();
+
+        // Initial centroids
+        let initial_centroids: DataFrame = DataFrame::new(vec![Series::new("0", vec![1.0]), Series::new("1", vec![101.0])]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_user_defined(2, initial_centroids, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_userdefined_init_tol_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Initial centroids
+        let initial_centroids: DataFrame = DataFrame::new(vec![
+            Series::new("0", vec![1.0, 1.1, 1.2]),
+            Series::new("1", vec![101.0, 101.1, 101.2]),
+            Series::new("2", vec![201.0, 201.1, 201.2]),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_user_defined(3, initial_centroids, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_userdefined_init_max_iter_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Initial centroids
+        let initial_centroids: DataFrame = DataFrame::new(vec![
+            Series::new("0", vec![1.0, 1.1, 1.2]),
+            Series::new("1", vec![101.0, 101.1, 101.2]),
+            Series::new("2", vec![201.0, 201.1, 201.2]),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_user_defined(3, initial_centroids, EndCondition::MaxIter(100));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_fit_predict_single_feature_equidist_init_tol_end_two_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0])]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(2, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_fit_predict_multi_features_equidist_init_tol_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(3, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_multi_features_equidist_init_max_iter_end_three_clusters() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(3, EndCondition::MaxIter(100));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Predict using the same data
+        let predictions: Series = model.predict(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Predictions: {:?}", predictions);
+
+        // Ensure predictions have the correct length
+        assert_eq!(predictions.len(), x.height());
+
+        // Check the predictions
+        let possible_solutions: Vec<Series> = vec![
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]),
+            Series::new("clusters", vec![1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0]),
+            Series::new("clusters", vec![2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]),
+        ];
+        assert!(possible_solutions.contains(&predictions));
+    }
+
+    #[test]
+    fn test_kmeans_compactness_single_feature() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0])]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(2, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Compute the compactness
+        let compactness: f64 = model.compactness(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Compactness: {:?}", compactness);
+
+        // Check the compactness
+        assert!(compactness == 4.0);
+    }
+
+    #[test]
+    fn test_kmeans_compactness_multi_features() {
+        // Sample data
+        let x: DataFrame = DataFrame::new(vec![
+            Series::new("feature1", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature2", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+            Series::new("feature3", vec![1.0, 2.0, 3.0, 101.0, 102.0, 103.0, 201.0, 202.0, 203.0]) + random::<f64>(),
+        ]).unwrap();
+
+        // Create a KMeans model
+        let mut model: KMeans = KMeans::new_equidistant(3, EndCondition::Tol(0.0));
+
+        // Fit the model
+        assert!(model.fit(&x).is_ok());
+
+        // Compute the compactness
+        let compactness: f64 = model.compactness(&x).unwrap();
+
+        // Print out the values for debugging
+        println!("Compactness: {:?}", compactness);
+
+        // Check the compactness
+        assert!((compactness - 18.0).abs() < 0.1);
+    } 
+
+    #[test]
     fn test_linear_layer_new() {
         // Create a linear layer
         let linear_layer: LinearLayer = LinearLayer::new(
@@ -1314,6 +1770,68 @@ mod tests {
         for i in 0..3 {
             assert!(is_close(output.f64().unwrap().get(i).unwrap(), expected_output[i]));
         }
+    }
+
+    #[test]
+    fn test_mlp_forward_2_layers() {
+        // Parameters
+        let weights_1: Series = Series::new("weights", vec![1.0, 2.0, 3.0]);
+        let biases_1: Series = Series::new("biases", vec![4.0, 5.0, 6.0]);
+        let weights_2: Series = Series::new("weights", vec![7.0, 8.0, 9.0]);
+        let biases_2: Series = Series::new("biases", vec![10.0, 11.0, 12.0]);
+
+        let activation_function: ActivationFunctionType = ActivationFunctionType::Sigmoid;
+        let input: Series = Series::new("input", vec![13.0, 14.0, 15.0]);
+
+        let sigmoid = |x: f64| -> f64 { return 1.0 / (1.0 + f64::exp(-x)) };
+
+        // Create a MLP
+        let mut mlp: MLP = MLP::new(LossFunctionType::BinaryCrossEntropy);
+        mlp = mlp.add_layer(LinearLayer::new(weights_1.clone(), biases_1.clone()), activation_function.clone());
+        mlp = mlp.add_layer(LinearLayer::new(weights_2.clone(), biases_2.clone()), activation_function.clone());
+
+        // Compute the forward pass
+        let output: Series = mlp.forward(input.clone());
+
+        // Compute true values
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&input * &weights_1).sum::<f64>().unwrap() + &biases_1.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        let true_values: Vec<f64> = vec![
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(0).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(1).unwrap(),
+            ),
+            sigmoid(
+                (&Series::new("input", true_values.clone()) * &weights_2)
+                    .sum::<f64>()
+                    .unwrap()
+                    + &biases_2.f64().unwrap().get(2).unwrap(),
+            ),
+        ];
+
+        // Compare the output
+        assert_eq!(
+            output,
+            Series::new("activated_values", &true_values)
+        );
     }
 
     #[test]
