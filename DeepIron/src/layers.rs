@@ -1,3 +1,5 @@
+//! A set of structs and functions that define a layer in a neural network.
+
 /// A set of structs and functions that define a layer in a neural network.
 ///
 /// # Example
@@ -65,7 +67,7 @@ pub mod layer {
     /// # Example
     ///
     /// ```
-    /// let linear_layer = LinearLayer::new(vec![1.0, 2.0, 3.0], vec![1.0, 2.0, 3.0]);
+    /// let linear_layer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
     /// ```
     #[derive(Clone)]
     pub struct LinearLayer {
@@ -79,14 +81,14 @@ pub mod layer {
         /// # Example
         ///
         /// ```
-        /// let layer = LinearLayer::new(vec![1.0, 2.0, 3.0], vec![1.0, 2.0, 3.0]);
+        /// let layer = LinearLayer::new(Series::new("weights", vec![1.0, 2.0, 3.0]), Series::new("biases", vec![1.0, 2.0, 3.0]));
         /// ```
         ///
         /// # Arguments
         ///
-        /// * `weights` - A series of weights for the layer.
+        /// * `weights` - A Series of weights for the layer.
         ///
-        /// * `biases` - A series of biases for the layer.
+        /// * `biases` - A Series of biases for the layer.
         ///
         /// # Returns
         ///

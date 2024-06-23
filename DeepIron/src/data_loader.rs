@@ -1,3 +1,5 @@
+//! A module for loading and transforming data into a Polars DataFrame.
+
 use polars::frame::DataFrame;
 use polars::prelude::*;
 use polars::series::Series;
@@ -17,6 +19,8 @@ pub trait DataFrameTransformer {
     fn min_max_norm_cols(&self, columns: &[&str]) -> Result<DataFrame, PolarsError>;
 
     fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError>;
+
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError>;
 }
 
 /// Implement DataFrameTransformer for Result<DataFrame, PolarsError> for easier chaining of DataFrame transformations.
@@ -48,6 +52,10 @@ impl DataFrameTransformer for Result<DataFrame, PolarsError> {
     fn get_col_by_index(&self, index: usize) -> Result<Series, PolarsError> {
         let df: &DataFrame = self.as_ref().unwrap();
         df.get_col_by_index(index)
+    }
+
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError> {
+        DataFrame::select_rows(df, indices)
     }
 }
 
@@ -187,6 +195,33 @@ impl DataFrameTransformer for DataFrame {
         let series: &[Series] = self.get_columns();
         Ok(series[index].clone())
     }
+    
+    /// Select rows from the DataFrame by index.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `df` - The DataFrame to select rows from.
+    /// 
+    /// * `indices` - A vector of row indices to select.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<DataFrame, PolarsError>` - A DataFrame containing the selected rows.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let selected_rows = DataFrame::select_rows(&df, vec![0, 1, 2]);
+    /// ```
+    fn select_rows(df: &DataFrame, indices: Vec<usize>) -> Result<DataFrame, PolarsError> {
+        let mut mask: Vec<bool> = vec![false; df.height()];
+        for index in indices {
+            mask[index] = true;
+        }
+        let chunked_array_mask: ChunkedArray<BooleanType> = ChunkedArray::new("mask", mask).into();
+        let selected_df: DataFrame = df.filter(&chunked_array_mask)?;
+        Ok(selected_df)
+    }
 }
 
 /// A set of functions for loading and transforming data into a Polars DataFrame.
@@ -220,7 +255,7 @@ pub mod data_loader_util {
     }
 }
 
-/// A set of functions that return commonly-used series -> series functions for data transformations.
+/// A set of functions that return commonly-used series-to-series functions for data transformations.
 ///
 ///
 /// # Example
@@ -247,15 +282,15 @@ pub mod transformer_functions {
         move |series: &Series| series.clone()
     }
 
-    /// Return a function that returns the power of a Series.
+    /// Return a function that returns a Series with all values raised to the provided power.
     ///
     /// # Arguments
     ///
-    /// * `power` - The power to raise the Series to.
+    /// * `power` - The exponent to raise the values to.
     ///
     /// # Returns
     ///
-    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
+    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns the transformed Series.
     pub fn power(power: f64) -> impl Fn(&Series) -> Series {
         return move |series: &Series| {
             let s_power: Series = series
@@ -267,7 +302,7 @@ pub mod transformer_functions {
         };
     }
 
-    /// Return a function that returns the log of a Series.
+    /// Return a function that returns a Series with the logarithm of all values with the provided base.
     ///
     /// # Arguments
     ///
@@ -275,7 +310,7 @@ pub mod transformer_functions {
     ///
     /// # Returns
     ///
-    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns a Series.
+    /// * `impl Fn(&Series) -> Series` - A function that takes a Series and returns the transformed Series.
     pub fn log(base: f64) -> impl Fn(&Series) -> Series {
         return move |series: &Series| {
             let s_log: Series = series

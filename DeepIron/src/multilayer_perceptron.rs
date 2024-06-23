@@ -1,3 +1,4 @@
+//! A module encapsulating the structures and methods for building a multilayer perceptron.
 use crate::data_loader::DataFrameTransformer;
 use crate::layers::layer::{Layer, LinearLayer};
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
@@ -20,9 +21,11 @@ use polars::series::Series;
 ///
 /// ```
 pub struct MLP {
-    // Fields for training
+    /// The loss function to use for the MLP.
     pub loss_function: LossFunctionType,
+    /// The activation functions to use for the MLP.
     pub activation_functions: Vec<ActivationFunctionType>,
+    /// The layers to use for the MLP.
     pub layers: Vec<LinearLayer>,
 }
 
@@ -70,6 +73,7 @@ impl MLP {
         layers: Vec<LinearLayer>,
         activation_functions: Vec<ActivationFunctionType>,
     ) -> MLP {
+        assert_eq!(layers.len(), activation_functions.len());
         MLP {
             loss_function,
             activation_functions,
@@ -143,7 +147,10 @@ impl MLP {
         layer: LinearLayer,
         activation_function: ActivationFunctionType,
     ) -> MLP {
-        assert!((0..self.layers.len()).contains(&i), "Index out of bounds.");
+
+        if i >= self.layers.len() {
+            panic!("Index out of bounds");
+        }
 
         let mut new_layers: Vec<LinearLayer> = self.layers.clone();
         let mut new_activation_functions: Vec<ActivationFunctionType> =
@@ -169,11 +176,11 @@ impl MLP {
     ///
     /// # Arguments
     ///
-    /// * `inputs` - A series of inputs to the MLP.
+    /// * `inputs` - A Series of inputs to the MLP.
     ///
     /// # Returns
     ///
-    /// A series of outputs from the MLP.
+    /// A Series of outputs from the MLP.
     pub fn forward(&self, inputs: Series) -> Series {
         let mut outputs: Series = inputs.clone();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -182,6 +189,7 @@ impl MLP {
         outputs
     }
 
+    /// # WARNING: This method is not yet implemented.
     /// Perform backward propagation on the MLP with the given inputs and outputs.
     ///
     /// # Example
@@ -197,11 +205,11 @@ impl MLP {
     ///
     /// # Arguments
     ///
-    /// * `inputs` - A series of inputs to the MLP.
+    /// * `inputs` - A Series of inputs to the MLP.
     ///
-    /// * `outputs` - A series of outputs from the MLP.
+    /// * `outputs` - A Series of outputs from the MLP.
     /// 
-    /// * `true_values` - A series of true values to compare the outputs to.
+    /// * `true_values` - A Series of true values to compare the outputs to.
     ///
     /// # Returns
     ///
@@ -249,7 +257,7 @@ impl MLP {
     }
 }
 
-impl model::Modeller for MLP {
+impl model::SupervisedModeller for MLP {
     /// Fit the model to the data.
     ///
     /// # Example
@@ -280,6 +288,15 @@ impl model::Modeller for MLP {
         Ok(())
     }
 
+    /// Predict the output of the model given the input.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// 
     fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError> {
         let mut outputs: Series = x.get_col_by_index(0).unwrap();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -288,11 +305,33 @@ impl model::Modeller for MLP {
         Ok(outputs)
     }
 
+    /// Calculate the loss of the model given the input and output.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// let loss = model.loss(&x, &y);
+    /// 
+    /// ```
     fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         Ok(self.loss_function.loss(&y_pred, y))
     }
 
+    /// Calculate the accuracy of the model given the input and output.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
+    /// 
+    /// let accuracy = model.accuracy(&x, &y);
+    /// 
+    /// ```
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         let accuracy: f64 = y_pred.equal(y).unwrap().sum().unwrap() as f64 / y_pred.len() as f64;

@@ -1,3 +1,8 @@
+//! # DeepIron
+//! `DeepIron` is a simple and extensible machine learning library written in Rust.
+//! The goal of this library is to understand the fundamentals of machine learning by implementing them from scratch.
+//! As such, the library is basic, unoptimised, and not suitable for production use. 
+
 pub mod data_loader;
 pub mod layers;
 pub mod linear_regression;
@@ -5,14 +10,11 @@ pub mod logistic_regression;
 pub mod model;
 pub mod multilayer_perceptron;
 pub mod support_vector_machine;
+pub mod k_means;
 
 #[cfg(test)]
 mod tests {
     use crate::layers::layer::LinearLayer;
-    use crate::model::activation_functions;
-
-    use self::model::loss_functions;
-
     use super::*;
     use data_loader::*;
     use layers::layer::Layer;
@@ -21,12 +23,15 @@ mod tests {
     use model::activation_functions::{ActivationFunction, ActivationFunctionType};
     use model::kernel_functions::{KernelFunction, KernelFunctionType};
     use model::loss_functions::{LossFunction, LossFunctionType};
-    use model::model::Modeller;
+    use model::model::SupervisedModeller;
     use multilayer_perceptron::*;
     use polars::prelude::*;
+    use rand::random;
     use std::path::Path;
     use support_vector_machine::*;
-
+    use model::model::ClusterModeller;
+    use k_means::*;
+    
     #[test]
     fn test_load_csv() {
         // Load the CSV file
@@ -186,6 +191,41 @@ mod tests {
         let expected_result: DataFrame =
             DataFrame::new(vec![Series::new("col1", &[0.0, 0.25, 0.5, 0.75, 1.0])]).unwrap();
         assert_eq!(df, expected_result);
+    }
+
+    #[test]
+    fn test_select_rows_all_existing() {
+        // Create a simple DataFrame for testing
+        let df: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+            Series::new("col2", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+        ])
+        .unwrap();
+
+        // Select rows
+        let selected_rows: DataFrame = DataFrame::select_rows(&df, vec![0, 2, 4]).unwrap();
+
+        // Check if the rows are selected correctly
+        let expected_result: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 3.0, 5.0]),
+            Series::new("col2", &[1.0, 3.0, 5.0]),
+        ])
+        .unwrap();
+        assert_eq!(selected_rows, expected_result);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_select_rows_idx_out_of_bounds() {
+        // Create a simple DataFrame for testing
+        let df: DataFrame = DataFrame::new(vec![
+            Series::new("col1", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+            Series::new("col2", &[1.0, 2.0, 3.0, 4.0, 5.0]),
+        ])
+        .unwrap();
+
+        // Select rows [should panic]
+        let _selected_rows: Result<DataFrame, PolarsError> = DataFrame::select_rows(&df, vec![5]);
     }
 
     #[test]

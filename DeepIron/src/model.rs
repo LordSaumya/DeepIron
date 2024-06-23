@@ -1,3 +1,5 @@
+//! A set of submodules used to define a generic model.
+
 /// A set of structs and functions that define a generic model.
 ///
 /// # Example
@@ -14,15 +16,15 @@ pub mod model {
     use polars::prelude::*;
     use polars::series::Series;
 
-    /// A trait that defines a model's fit and predict functions.
-    pub trait Modeller {
+    /// A trait that defines a supervised learning model's fit and predict functions.
+    pub trait SupervisedModeller {
         /// Fit the model to the training data.
         ///
         /// # Arguments
         ///
-        /// * `x` - The features to train the model on.
+        /// * `x` - The Dataframe containing the features for training.
         ///
-        /// * `y` - The target values to train the model on.
+        /// * `y` - The Series of expected target values for training.
         ///
         /// * `num_epochs` - The number of epochs to train for.
         ///
@@ -52,7 +54,7 @@ pub mod model {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features to predict the target values for.
+        /// * `x` - The DataFrame containing the features to predict for.
         ///
         /// # Returns
         ///
@@ -73,7 +75,7 @@ pub mod model {
         ///
         /// * `x` - The features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The true values.
         ///
         /// # Returns
         ///
@@ -94,7 +96,7 @@ pub mod model {
         ///
         /// * `x` - The features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The true values.
         ///
         /// # Returns
         ///
@@ -109,7 +111,69 @@ pub mod model {
         /// ```
         fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError>;
     }
+
+    /// A trait that defines a clustering model's fit, predict, and evaluation functions.
+    pub trait ClusterModeller {
+        /// Fit the model to the training data.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The Dataframe containing the features for training.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<(), PolarsError>` - A result indicating if the model was fit successfully.
+        ///
+        /// # Example
+        ///
+        /// ```no_run
+        /// let model = Model::KMeans::new_random(3, EndCondition::MaxIter(100));
+        ///
+        /// model.fit(&x);
+        ///
+        /// ```
+        fn fit(&mut self, x: &DataFrame) -> Result<(), PolarsError>;
+
+        /// Predict the cluster assignments for the given features.
+        ///
+        /// # Arguments
+        ///
+        /// * `x` - The DataFrame containing the features to predict for.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<Series, PolarsError>` - A result containing the predicted cluster assignments.
+        ///
+        /// # Example
+        ///
+        /// ```no_run
+        ///
+        /// let cluster_assignments = model.predict(&x);
+        ///
+        /// ```
+        fn predict(&mut self, x: &DataFrame) -> Result<Series, PolarsError>;
+
+        /// Computes the compactness of the clusters.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `x` - The DataFrame containing the features to evaluate the model on.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Result<f64, PolarsError>` - A result containing the compactness of the clusters.
+        /// 
+        /// # Example
+        /// 
+        /// ```no_run
+        /// 
+        /// let compactness = model.compactness(&x);
+        /// 
+        /// ```
+        fn compactness(&mut self, x: &DataFrame) -> Result<f64, PolarsError>;
+    }
 }
+
 
 /// A set of loss functions for use in training models.
 ///
@@ -153,13 +217,13 @@ pub mod loss_functions {
     /// let loss = loss_functions::MeanSquaredError;
     /// ```
     pub trait LossFunction {
-        /// Compute the loss between the predicted and actual values.
+        /// Compute the loss between the predicted and true values.
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -179,15 +243,15 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features.
+        /// * `x` - The DataFrame of features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The gradient.
+        /// * `Series` - The gradients.
         ///
         /// # Example
         ///
@@ -203,9 +267,9 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -222,13 +286,13 @@ pub mod loss_functions {
     }
 
     impl LossFunction for LossFunctionType {
-        /// Compute the loss between the predicted and actual values.
+        /// Compute the loss between the predicted and true values.
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -277,11 +341,11 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The features.
+        /// * `x` - The DataFrame of features.
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -341,9 +405,9 @@ pub mod loss_functions {
         ///
         /// # Arguments
         ///
-        /// * `y` - The actual values.
+        /// * `y` - The Series of true values.
         ///
-        /// * `y_pred` - The predicted values.
+        /// * `y_pred` - The Series of predicted values.
         ///
         /// # Returns
         ///
@@ -407,6 +471,10 @@ pub mod activation_functions {
         Sigmoid,
         /// Rectified linear unit activation function.
         ReLU,
+        /// Softmax activation function.
+        Softmax,
+        /// Leaky ReLU activation function.
+        LReLU(f64)
     }
 
     /// Implement the Display trait for printing ActivationFunctionType.
@@ -416,6 +484,8 @@ pub mod activation_functions {
                 ActivationFunctionType::Identity => write!(f, "Identity"),
                 ActivationFunctionType::Sigmoid => write!(f, "Sigmoid"),
                 ActivationFunctionType::ReLU => write!(f, "ReLU"),
+                ActivationFunctionType::Softmax => write!(f, "Softmax"),
+                ActivationFunctionType::LReLU(alpha) => write!(f, "Leaky ReLU (alpha = {})", alpha),
             }
         }
     }
@@ -434,11 +504,11 @@ pub mod activation_functions {
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the activation for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The activated values.
+        /// * `Series` - The Series of activation values.
         ///
         /// # Example
         ///
@@ -449,15 +519,15 @@ pub mod activation_functions {
         /// ```
         fn activate(&self, values: &Series) -> Series;
 
-        ///Compute the gradient of the activation function.
+        /// Compute the gradient of the activation function.
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the gradient for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The gradients.
+        /// * `Series` - The Series of gradients.
         ///
         /// # Example
         ///
@@ -474,11 +544,11 @@ pub mod activation_functions {
         ///
         /// # Arguments
         ///
-        /// * `values` - The values to activate.
+        /// * `values` - The Series of values to compute the activation for.
         ///
         /// # Returns
         ///
-        /// * `Series` - The activated values.
+        /// * `Series` - The Series of activation values.
         ///
         /// # Example
         ///
@@ -512,12 +582,57 @@ pub mod activation_functions {
                         .rename("activated_values")
                         .clone()
                 }
+                ActivationFunctionType::Softmax => {
+                    // softmax(x) = e^x / sum(e^x)
+                    let activated_values: Series = values
+                    .f64()
+                    .unwrap()
+                    .apply(|value| Some(f64::exp(value.unwrap())))
+                    .into_series()
+                    .clone();
+                    let sum: f64 = activated_values.sum().unwrap();
+                    activated_values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(value.unwrap() / sum))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
+                }
+                ActivationFunctionType::LReLU(alpha) => {
+                    // Leaky ReLU(x) = x if x > 0 else alpha * x
+                    values
+                        .f64()
+                        .unwrap()
+                        .apply(|value| Some(if value.unwrap() > 0.0 { value.unwrap() } else { alpha * value.unwrap() }))
+                        .into_series()
+                        .rename("activated_values")
+                        .clone()
+                }
             }
         }
 
+        /// Compute the gradient of the activation function.
+        /// 
+        /// # Arguments
+        /// 
+        /// * `values` - The Series of values to compute the gradient for.
+        /// 
+        /// # Returns
+        /// 
+        /// * `Series` - The Series of gradients.
+        /// 
+        /// # Example
+        /// 
+        /// ```
+        /// 
+        /// let gradients = activation.gradient(&values);
+        /// 
+        /// ```
         fn gradient(&self, values: &Series) -> Series {
             match self {
                 ActivationFunctionType::Identity => {
+                    // identity'(x) = 1
                     Series::new("gradients", vec![1.0; values.len()])
                 }
                 ActivationFunctionType::Sigmoid => {
@@ -536,6 +651,42 @@ pub mod activation_functions {
                     for value in values.f64().unwrap().into_iter() {
                         let value: f64 = value.unwrap();
                         gradients.push(if value > 0.0 { 1.0 } else { 0.0 });
+                    }
+                    Series::new("gradients", gradients)
+                }
+                ActivationFunctionType::Softmax => {
+                    // Softmax gradient involves the Jacobian matrix of the softmax function
+                    let values: Vec<f64> = values.f64().unwrap().into_iter().map(|v| v.unwrap()).collect();
+                    let len: usize = values.len();
+                
+                    // Compute softmax probabilities
+                    let max_value: f64 = values.iter().cloned().fold(f64::NAN, f64::max);
+                    let exp_values: Vec<f64> = values.iter().map(|v| (v - max_value).exp()).collect();
+                    let sum_exp_values: f64 = exp_values.iter().sum();
+                    let softmax: Vec<f64> = exp_values.iter().map(|v| v / sum_exp_values).collect();
+                
+                    // Compute the Jacobian matrix of the softmax
+                    let mut jacobian: Vec<Vec<f64>> = vec![vec![0.0; len]; len];
+                    for i in 0..len {
+                        for j in 0..len {
+                            if i == j {
+                                jacobian[i][j] = softmax[i] * (1.0 - softmax[i]);
+                            } else {
+                                jacobian[i][j] = -softmax[i] * softmax[j];
+                            }
+                        }
+                    }
+                
+                    // Flatten the Jacobian matrix to a single vector
+                    let gradients: Vec<f64> = jacobian.into_iter().flat_map(|row| row.into_iter()).collect();
+                    Series::new("gradients", gradients)
+                }
+                ActivationFunctionType::LReLU(alpha) => {
+                    // Leaky ReLU'(x) = 1 if x > 0 else alpha
+                    let mut gradients: Vec<f64> = Vec::with_capacity(values.len());
+                    for value in values.f64().unwrap().into_iter() {
+                        let value: f64 = value.unwrap();
+                        gradients.push(if value > 0.0 { 1.0 } else { *alpha });
                     }
                     Series::new("gradients", gradients)
                 }
@@ -579,13 +730,13 @@ pub mod kernel_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The first set of values.
+        /// * `x` - The first Series of values.
         ///
-        /// * `y` - The second set of values.
+        /// * `y` - The second Series of values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The kernel.
+        /// * `Series` - The kernel values.
         ///
         /// # Example
         ///
@@ -603,13 +754,13 @@ pub mod kernel_functions {
         ///
         /// # Arguments
         ///
-        /// * `x` - The first set of values.
+        /// * `x` - The first Series of values.
         ///
-        /// * `y` - The second set of values.
+        /// * `y` - The second Series of values.
         ///
         /// # Returns
         ///
-        /// * `Series` - The kernel.
+        /// * `Series` - The kernel values.
         ///
         /// # Example
         ///

@@ -1,3 +1,5 @@
+//! A set of structs and functions for logistic regression.
+
 use crate::data_loader::DataFrameTransformer;
 use crate::model::activation_functions::{ActivationFunction, ActivationFunctionType};
 use crate::model::loss_functions::{LossFunction, LossFunctionType};
@@ -42,6 +44,22 @@ impl Logistic {
         }
     }
 
+    /// Classify predictions based on a threshold.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `predictions` - A Series of predictions.
+    /// * `threshold` - The threshold to classify the predictions.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Series` - A binary Series of classified predictions.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let classified_preds: Series = Model::Logistic::classify(&predictions, 0.5);
+    /// ```
     pub fn classify(predictions: &Series, threshold: f64) -> Series {
         let mut classified_preds: Vec<f64> = Vec::with_capacity(predictions.len());
 
@@ -57,6 +75,23 @@ impl Logistic {
         Series::new("prediction", classified_preds)
     }
 
+    /// Compute the gradients for the logistic model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// * `y` - A Series of target values.
+    /// * `predictions` - A Series of predictions.
+    /// 
+    /// # Returns
+    /// 
+    /// * `(f64, Vec<f64>)` - A tuple containing the intercept gradient and the feature gradients.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let gradients: (f64, Vec<f64>) = model.compute_gradients(&x, &y, &predictions);
+    /// ```
     fn compute_gradients(
         &self,
         x: &DataFrame,
@@ -79,7 +114,33 @@ impl Logistic {
     }
 }
 
-impl model::Modeller for Logistic {
+impl model::SupervisedModeller for Logistic {
+
+    /// Fit the model to the data.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// * `num_epochs` - The number of epochs to train the model.
+    /// 
+    /// * `learning_rate` - The learning rate for the model.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<(), PolarsError>` - A result indicating success or failure.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let model = Model::Logistic::new();
+    /// 
+    /// model.fit(&x, &y, 100, 0.01);
+    /// 
+    /// ```
     fn fit(
         &mut self,
         x: &DataFrame,
@@ -113,6 +174,23 @@ impl model::Modeller for Logistic {
         Ok(())
     }
 
+    /// Predict the target values for the given features.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Series, PolarsError>` - A result containing the predictions.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let y_pred = model.predict(&x);
+    /// 
+    /// ```
     fn predict(&self, x: &DataFrame) -> Result<Series, PolarsError> {
         let mut predictions: Series = Series::new("prediction", vec![self.intercept; x.height()]);
 
@@ -125,6 +203,25 @@ impl model::Modeller for Logistic {
         Ok(ActivationFunctionType::Sigmoid.activate(&predictions))
     }
 
+    /// Compute the accuracy of the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<f64, PolarsError>` - A result containing the accuracy of the model.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let accuracy = model.accuracy(&x, &y);
+    /// 
+    /// ```
     fn accuracy(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred: Series = self.predict(x)?;
         let y_pred_rounded: Series = Logistic::classify(&y_pred, 0.5);
@@ -134,6 +231,25 @@ impl model::Modeller for Logistic {
         Ok(accuracy)
     }
 
+    /// Compute the loss of the model.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - A DataFrame of features.
+    /// 
+    /// * `y` - A Series of target values.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<f64, PolarsError>` - A result containing the loss of the model.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// 
+    /// let loss = model.loss(&x, &y);
+    /// 
+    /// ```
     fn loss(&self, x: &DataFrame, y: &Series) -> Result<f64, PolarsError> {
         let y_pred = self.predict(x)?;
         Ok(self.loss_function.loss(y, &y_pred))
