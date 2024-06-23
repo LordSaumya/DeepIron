@@ -187,8 +187,8 @@ pub mod loss_functions {
     use polars::prelude::*;
     use polars::{frame::DataFrame, series::Series};
 
-    /// Enum of supported loss functions.
-    #[derive(Clone, PartialEq)]
+    /// Supported loss functions.
+    #[derive(Clone)]
     pub enum LossFunctionType {
         /// Mean squared error loss function.
         MeanSquaredError,
@@ -463,7 +463,7 @@ pub mod activation_functions {
     use polars::series::Series;
 
     /// Enum of supported activation functions.
-    #[derive(Clone, PartialEq, Debug)]
+    #[derive(Clone)]
     pub enum ActivationFunctionType {
         /// Identity activation function (does nothing)
         Identity,

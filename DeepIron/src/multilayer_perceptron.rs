@@ -13,9 +13,9 @@ use polars::series::Series;
 /// # Example
 ///
 /// ```
-/// let model = Model::MLP::new(LossFunctionType::MSE);
+/// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
 ///
-/// model.fit(&x, &y, num_epochs, learning_rate);
+/// model.fit(&x, &y, 100, 0.01);
 ///
 /// let y_pred = model.predict(&x);
 ///
@@ -35,7 +35,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// ```
     pub fn new(loss_function: LossFunctionType) -> MLP {
         MLP {
@@ -50,10 +50,6 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let layers = vec![LinearLayer::new_random(32, [-1, 1]), LinearLayer::new_random(32, [-1, 1])];
-    /// let activation_functions = vec![ActivationFunctionType::ReLU, ActivationFunctionType::ReLU];
-    /// let loss_function = LossFunctionType::MSE;
-    /// 
     /// let model = Model::MLP::new_with_layers(loss_function, layers, activation_functions);
     /// ```
     ///
@@ -86,7 +82,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// let layer = LinearLayer::new_random(32, [-1, 1]);
     ///
     /// let new_model = model.add_layer(layer, ActivationFunctionType::ReLU);
@@ -124,7 +120,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let new_model = model.set_layer(0, layer, ActivationFunctionType::ReLU);
     ///
@@ -169,7 +165,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let y_pred = model.forward(&x);
     /// ```
@@ -195,12 +191,11 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
-    /// 
-    /// let y_pred = model.forward(&x);
-    /// 
-    /// let (updated_weights, updated_biases) = model.backward(&x, &y_pred, &y);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
+    /// let y_pred = model.forward(&x);
+    ///
+    /// let gradients = model.backward(&x, &y_pred, &y)
     /// ```
     ///
     /// # Arguments
@@ -213,47 +208,32 @@ impl MLP {
     ///
     /// # Returns
     ///
-    /// A tuple of two vectors, each with a series of updated weights and biases for each layer.
+    /// A tuple of two vectors, each with a Series of gradients for the weights and biases, respectively.
     pub fn backward(
-        &mut self,
+        &self,
         inputs: &Series,
         outputs: &Series,
         true_values: &Series,
-        learning_rate: f64
     ) -> (Vec<Series>, Vec<Series>) {
-        // Calculate the initial gradient of the loss with respect to the output
-        let grad_outputs: f64 = self.loss_function.intercept_gradient(true_values, outputs);
-    
-        let mut weights_gradients: Vec<Series> = Vec::new();
-        let mut biases_gradients: Vec<Series> = Vec::new();
-    
-        let mut grad_outputs_series = Series::new("grad_outputs", vec![grad_outputs]);
-    
-        for i in (0..self.layers.len()).rev() {
-            let layer = &self.layers[i];
-    
-            let layer_inputs = if i == 0 {
-                inputs.clone()
-            } else {
-                self.layers[i - 1].forward(inputs.clone(), self.activation_functions[i - 1].clone())
-            };
-    
-            // Perform backward propagation for the current layer
-            let (new_weights, new_biases) = layer.backward(layer_inputs.clone(), grad_outputs_series.clone(), learning_rate);
-    
-            // Store the updated weights and biases
-            weights_gradients.push(new_weights.clone());
-            biases_gradients.push(new_biases.clone());
-    
-            // Update the gradient for the next layer (moving backwards)
-            grad_outputs_series = new_weights.clone();
-        }
-    
-        // Reverse the gradients to match the order of the layers
-        weights_gradients.reverse();
-        biases_gradients.reverse();
-    
-        (weights_gradients, biases_gradients)
+        // let mut upstream_gradient: Series =
+        //     self.loss_function
+        //         .gradient(&(inputs.clone().into_frame()), &true_values, &outputs);
+        // let mut gradients: Vec<Series> = Vec::new();
+        // let mut biases: Vec<Series> = Vec::new();
+        // for (i, layer) in self.layers.iter().enumerate().rev() {
+        //     let (weight_gradients, bias_gradients, input_gradients) = layer.backward(
+        //         inputs.clone(),
+        //         outputs.clone(),
+        //         self.loss_function.clone(),
+        //         self.activation_functions[i].clone(),
+        //         upstream_gradient,
+        //     );
+        //     upstream_gradient = input_gradients;
+        //     gradients.push(weight_gradients);
+        //     biases.push(bias_gradients);
+        // }
+        // (gradients, biases)
+        unimplemented!()
     }
 }
 
@@ -264,9 +244,9 @@ impl model::SupervisedModeller for MLP {
     ///
     /// ```
     ///
-    /// let model = MLP::new(LossFunctionType::MSE);
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
     ///
-    /// model.fit(&x, &y, num_epochs, learning_rate);
+    /// model.fit(&x, &y, 100, 0.01);
     ///
     /// ```
     fn fit(
@@ -279,10 +259,13 @@ impl model::SupervisedModeller for MLP {
         let x: Series = x.get_col_by_index(0)?;
         for _ in 0..num_epochs {
             let y_pred: Series = self.forward(x.clone());
-            let (updated_weights, updated_biases) = self.backward(&x, &y_pred, y, learning_rate);
-            for i in 0..self.layers.len() {
-                self.layers[i].weights = updated_weights[i].clone();
-                self.layers[i].biases = updated_biases[i].clone();
+            let (weights_gradients, biases_gradients) = self.backward(&x, &y_pred, &y);
+            for (i, layer) in self.layers.iter_mut().enumerate() {
+                let layer_weights_gradients: Series = &weights_gradients[i] * learning_rate;
+                let layer_biases_gradients: Series = &biases_gradients[i] * learning_rate;
+
+                layer.weights = &layer.weights - (&(layer_weights_gradients));
+                layer.biases = &layer.biases - (&(layer_biases_gradients));
             }
         }
         Ok(())
