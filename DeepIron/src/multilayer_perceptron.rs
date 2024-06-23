@@ -13,7 +13,7 @@ use polars::series::Series;
 /// # Example
 ///
 /// ```
-/// let model = Model::MLP::new(LossFunctionType::MSE);
+/// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
 ///
 /// model.fit(&x, &y, num_epochs, learning_rate);
 ///
@@ -35,7 +35,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// ```
     pub fn new(loss_function: LossFunctionType) -> MLP {
         MLP {
@@ -52,7 +52,7 @@ impl MLP {
     /// ```
     /// let layers = vec![LinearLayer::new_random(32, [-1, 1]), LinearLayer::new_random(32, [-1, 1])];
     /// let activation_functions = vec![ActivationFunctionType::ReLU, ActivationFunctionType::ReLU];
-    /// let loss_function = LossFunctionType::MSE;
+    /// let loss_function = LossFunctionType::MeanSquaredError;
     /// 
     /// let model = Model::MLP::new_with_layers(loss_function, layers, activation_functions);
     /// ```
@@ -86,7 +86,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// let layer = LinearLayer::new_random(32, [-1, 1]);
     ///
     /// let new_model = model.add_layer(layer, ActivationFunctionType::ReLU);
@@ -124,7 +124,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let new_model = model.set_layer(0, layer, ActivationFunctionType::ReLU);
     ///
@@ -169,7 +169,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// let y_pred = model.forward(&x);
     /// ```
@@ -195,7 +195,7 @@ impl MLP {
     /// # Example
     ///
     /// ```
-    /// let model = Model::MLP::new(LossFunctionType::MSE);
+    /// let model = Model::MLP::new(LossFunctionType::MeanSquaredError);
     /// 
     /// let y_pred = model.forward(&x);
     /// 
@@ -264,7 +264,7 @@ impl model::SupervisedModeller for MLP {
     ///
     /// ```
     ///
-    /// let model = MLP::new(LossFunctionType::MSE);
+    /// let model = MLP::new(LossFunctionType::MeanSquaredError);
     ///
     /// model.fit(&x, &y, num_epochs, learning_rate);
     ///
