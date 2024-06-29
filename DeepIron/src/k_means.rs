@@ -65,7 +65,7 @@ impl KMeans {
     /// # Example
     ///
     /// ```
-    /// let model = Model::KMeans::new(3, EndCondition::MaxIter(100));
+    /// let model = Model::KMeans::new_random(3, EndCondition::MaxIter(100));
     /// ```
     pub fn new_random(n_clusters: usize, end_condition: EndCondition) -> KMeans {
         KMeans {

@@ -1,6 +1,6 @@
 [package]
 name = "DeepIron"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 keywords = ["rust", "machine_learning", "deep_learning", "data_science"]
 categories = ["science"]

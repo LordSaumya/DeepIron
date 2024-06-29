@@ -189,7 +189,6 @@ impl MLP {
         outputs
     }
 
-    /// # WARNING: This method is not yet implemented.
     /// Perform backward propagation on the MLP with the given inputs and outputs.
     ///
     /// # Example
