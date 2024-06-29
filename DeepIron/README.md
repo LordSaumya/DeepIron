@@ -9,4 +9,5 @@ A basic machine learning library built in Rust.
 - Logistic Regression
 - Multilayer Perceptron
 - Support Vector Machine
+- K-Means Clustering
 - Dataloader
